@@ -123,7 +123,7 @@ siteforge/
 
 ### Phase 1C: Visual Canvas Interaction
 
-- [ ] **Task 7: Canvas iframe and overlay setup**
+- [x] **Task 7: Canvas iframe and overlay setup**
   - Create `src/editor/canvas.ts` — manages the iframe element
   - Create an iframe pointing to `/preview/` that fills the canvas area
   - Create `src/editor/overlay.ts` — a transparent div positioned exactly over the iframe using absolute positioning
