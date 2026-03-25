@@ -234,7 +234,7 @@ src/
   - Files to modify: `src/editor/sidebar.ts`, `src/server/routes/chat.ts` (add `/api/config/set-key` endpoint), `src/server/config.ts` (add `setApiKey()` function)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 19: Chat keyboard shortcuts and UX polish**
+- [x] **Task 19: Chat keyboard shortcuts and UX polish**
   - Cmd+K or Ctrl+K: focus the chat input from anywhere (global shortcut)
   - Cmd+L or Ctrl+L: clear chat history and start fresh
   - Escape while chat input is focused: blur the input and return focus to canvas

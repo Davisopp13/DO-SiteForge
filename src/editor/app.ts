@@ -37,7 +37,7 @@ function init() {
   const history = createHistory(canvas);
 
   // Initialize centralized keyboard shortcuts
-  const keyboard = createKeyboard({ toolbar, overlay, history, canvas });
+  const keyboard = createKeyboard({ toolbar, overlay, history, canvas, sidebar });
 
   // Listen for move completions to record in history
   // Track pending drag state for history recording

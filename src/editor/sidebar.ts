@@ -492,7 +492,10 @@ export function createSidebar(container: HTMLElement): SidebarManager {
 
   function scrollToBottom(): void {
     requestAnimationFrame(() => {
-      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+      chatMessagesEl.scrollTo({
+        top: chatMessagesEl.scrollHeight,
+        behavior: 'smooth',
+      });
     });
   }
 

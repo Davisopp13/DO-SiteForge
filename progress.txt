@@ -659,3 +659,19 @@
   - Setup guide uses password input type to obscure API key
   - Enter key on input triggers save via keydown listener
 ---
+
+## Iteration 41 - Task 19: Chat keyboard shortcuts and UX polish
+- Added Cmd+K / Ctrl+K: focus chat input from anywhere (switches to chat tab first)
+- Added Cmd+L / Ctrl+L: clear chat history and start fresh
+- Escape while chat input is focused: blurs input and returns focus to canvas
+- All three shortcuts added to keyboard.ts with sidebar as optional dependency
+- Cmd+K and Cmd+L placed before `isInputFocused` check so they work even from inputs
+- Changed scrollToBottom() to use `scrollTo({ behavior: 'smooth' })` for smooth scroll animations
+- Chat input placeholder was already context-aware from Task 11/18 (selected element, no API key states)
+- Files changed: src/editor/keyboard.ts, src/editor/sidebar.ts, src/editor/app.ts, PRD.md
+- Learnings for future iterations:
+  - Sidebar passed as optional dep to keyboard — backward compatible (sidebar?: SidebarManager)
+  - Cmd+K/L must be before isInputFocused guard to work when chat textarea is already focused
+  - Escape handler checks document.activeElement against sidebar.inputEl to detect chat input focus
+  - `scrollTo({ behavior: 'smooth' })` is well-supported and avoids needing custom animation
+---

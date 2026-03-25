@@ -5,6 +5,7 @@ import type { ToolbarManager, ToolType } from './toolbar.js';
 import type { OverlayManager } from './overlay.js';
 import type { HistoryManager } from './history.js';
 import type { CanvasManager } from './canvas.js';
+import type { SidebarManager } from './sidebar.js';
 
 export interface KeyboardManager {
   destroy(): void;
@@ -15,6 +16,7 @@ interface KeyboardDeps {
   overlay: OverlayManager;
   history: HistoryManager;
   canvas: CanvasManager;
+  sidebar?: SidebarManager;
 }
 
 const TOOL_SHORTCUTS: Record<string, ToolType> = {
@@ -33,7 +35,7 @@ const VIEWPORT_SHORTCUTS: Record<string, string> = {
 };
 
 export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
-  const { toolbar, overlay, history, canvas } = deps;
+  const { toolbar, overlay, history, canvas, sidebar } = deps;
 
   function isTextEditing(): boolean {
     return overlay.isTextEditing;
@@ -47,8 +49,14 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
   function handleKeyDown(e: KeyboardEvent) {
     const isMeta = e.metaKey || e.ctrlKey;
 
-    // --- Escape: always allowed (exits text edit or deselects) ---
+    // --- Escape: always allowed (exits text edit, blurs chat input, or deselects) ---
     if (e.key === 'Escape') {
+      // If chat input is focused, blur it and return focus to canvas
+      if (sidebar && document.activeElement === sidebar.inputEl) {
+        sidebar.inputEl.blur();
+        e.preventDefault();
+        return;
+      }
       if (isTextEditing() && overlay.selectedElement) {
         // Exit text edit mode — send end message to bridge
         canvas.sendToBridge({
@@ -65,6 +73,21 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
 
     // --- All other shortcuts blocked during text edit mode ---
     if (isTextEditing()) return;
+
+    // --- Cmd+K: focus chat input (global, works even from inputs) ---
+    if (isMeta && e.key.toLowerCase() === 'k' && sidebar) {
+      e.preventDefault();
+      sidebar.switchTab('chat');
+      sidebar.focusInput();
+      return;
+    }
+
+    // --- Cmd+L: clear chat history (global, works even from inputs) ---
+    if (isMeta && e.key.toLowerCase() === 'l' && sidebar) {
+      e.preventDefault();
+      sidebar.clearChat();
+      return;
+    }
 
     // --- Don't fire if focus is in an input/textarea ---
     if (isInputFocused(e)) return;
