@@ -643,3 +643,19 @@
   - Chips rendered inside the message element so they're associated with the specific response
   - Chips self-remove on click before sending to avoid stale UI
 ---
+
+## Iteration 40 - Task 18: No-API-key disabled state
+- When no API key is configured, chat tab shows setup guide with SiteForge icon, instructions, and inline key input
+- Setup guide has password input + Save button that POSTs to `/api/config/set-key`
+- `/api/config/set-key` endpoint saves key via `setApiKey()`, reloads config into `app.locals.sfConfig`
+- After saving, chat activates immediately without server restart (setup guide hidden, messages + input shown)
+- On sidebar init, fetches `/api/config/status` to check if AI is enabled — if not, shows setup guide
+- Properties tab works normally regardless of API key status
+- Placeholder text shows "AI features disabled — set API key" when no key configured
+- Files changed: src/editor/sidebar.ts, src/server/index.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `activateChat()` / `deactivateChat()` toggle visibility of chatMessagesEl + chatInputArea vs setupGuide
+  - Config reload on set-key: `loadConfig()` re-reads from disk after `setApiKey()` writes to ~/.siteforge/config.json
+  - Setup guide uses password input type to obscure API key
+  - Enter key on input triggers save via keydown listener
+---

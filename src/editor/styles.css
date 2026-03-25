@@ -1018,3 +1018,111 @@ html, body {
   color: var(--sf-accent);
   border-color: var(--sf-accent);
 }
+
+/* No-API-key setup guide */
+.sf-chat-setup-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  text-align: center;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sf-setup-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  margin: 0 0 16px 0;
+}
+
+.sf-setup-steps {
+  text-align: left;
+  width: 100%;
+  font-size: 12px;
+  color: var(--sf-text-secondary);
+  line-height: 1.6;
+}
+
+.sf-setup-steps p {
+  margin: 4px 0;
+}
+
+.sf-setup-steps strong {
+  color: var(--sf-text-primary);
+}
+
+.sf-setup-code {
+  display: block;
+  background: var(--sf-bg-secondary);
+  border: 1px solid var(--sf-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  margin: 6px 0 10px 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  color: var(--sf-text-primary);
+}
+
+.sf-setup-steps code {
+  background: var(--sf-bg-secondary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+}
+
+.sf-setup-input-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.sf-setup-key-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--sf-border);
+  border-radius: 4px;
+  background: var(--sf-bg-primary);
+  color: var(--sf-text-primary);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  outline: none;
+}
+
+.sf-setup-key-input:focus {
+  border-color: var(--sf-accent);
+  box-shadow: 0 0 0 2px rgba(55, 138, 221, 0.15);
+}
+
+.sf-setup-save-btn {
+  padding: 6px 14px;
+  background: var(--sf-green);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sf-setup-save-btn:hover {
+  opacity: 0.9;
+}
+
+.sf-setup-save-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sf-setup-status {
+  margin-top: 8px;
+  font-size: 11px;
+  width: 100%;
+  text-align: center;
+}

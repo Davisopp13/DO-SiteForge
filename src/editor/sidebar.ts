@@ -39,6 +39,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   let selectedElement: ElementInfo | null = null;
   let isLoading = false;
   let autoApply = false;
+  let aiEnabled = true; // assume enabled, will check on init
   const messages: ChatMessage[] = [];
 
   // Create tab bar
@@ -84,6 +85,88 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     <span>Describe a change to your site</span>
   `;
   chatMessagesEl.appendChild(emptyState);
+
+  // No-API-key setup guide
+  const setupGuide = document.createElement('div');
+  setupGuide.className = 'sf-chat-setup-guide';
+  setupGuide.style.display = 'none';
+  setupGuide.innerHTML = `
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;margin-bottom:12px">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5"/>
+      <path d="M2 12l10 5 10-5"/>
+    </svg>
+    <h3 class="sf-setup-heading">Set up AI to get started</h3>
+    <div class="sf-setup-steps">
+      <p>1. Get an API key from <strong>console.anthropic.com</strong></p>
+      <p>2. Set it via environment variable:</p>
+      <pre class="sf-setup-code">export ANTHROPIC_API_KEY=sk-ant-...</pre>
+      <p>Or paste it below to save to <code>~/.siteforge/config.json</code>:</p>
+    </div>
+    <div class="sf-setup-input-row">
+      <input type="password" class="sf-setup-key-input" placeholder="sk-ant-..." spellcheck="false" autocomplete="off" />
+      <button class="sf-setup-save-btn">Save</button>
+    </div>
+    <div class="sf-setup-status" style="display:none"></div>
+  `;
+
+  // Wire up the save button
+  const setupKeyInput = setupGuide.querySelector('.sf-setup-key-input') as HTMLInputElement;
+  const setupSaveBtn = setupGuide.querySelector('.sf-setup-save-btn') as HTMLButtonElement;
+  const setupStatus = setupGuide.querySelector('.sf-setup-status') as HTMLElement;
+
+  setupSaveBtn.addEventListener('click', async () => {
+    const key = setupKeyInput.value.trim();
+    if (!key) return;
+
+    setupSaveBtn.disabled = true;
+    setupSaveBtn.textContent = 'Saving...';
+    setupStatus.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/config/set-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key }),
+      });
+      const data = await res.json() as { success?: boolean; error?: string; aiEnabled?: boolean };
+
+      if (data.success && data.aiEnabled) {
+        aiEnabled = true;
+        activateChat();
+      } else {
+        setupStatus.textContent = data.error || 'Failed to save key';
+        setupStatus.style.display = '';
+        setupStatus.style.color = 'var(--sf-danger, #e55)';
+      }
+    } catch {
+      setupStatus.textContent = 'Connection error — is the server running?';
+      setupStatus.style.display = '';
+      setupStatus.style.color = 'var(--sf-danger, #e55)';
+    } finally {
+      setupSaveBtn.disabled = false;
+      setupSaveBtn.textContent = 'Save';
+    }
+  });
+
+  setupKeyInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') setupSaveBtn.click();
+  });
+
+  /** Hide setup guide and show chat interface */
+  function activateChat(): void {
+    setupGuide.style.display = 'none';
+    chatMessagesEl.style.display = '';
+    chatInputArea.style.display = '';
+    updatePlaceholder();
+  }
+
+  /** Show setup guide and hide chat interface */
+  function deactivateChat(): void {
+    setupGuide.style.display = '';
+    chatMessagesEl.style.display = 'none';
+    chatInputArea.style.display = 'none';
+  }
 
   // Loading indicator (three animated dots)
   const loadingEl = document.createElement('div');
@@ -136,6 +219,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   chatInputArea.appendChild(autoApplyRow);
   chatInputArea.appendChild(chatInputRow);
 
+  chatContent.appendChild(setupGuide);
   chatContent.appendChild(chatMessagesEl);
   chatContent.appendChild(chatInputArea);
 
@@ -158,7 +242,9 @@ export function createSidebar(container: HTMLElement): SidebarManager {
 
   // Update placeholder based on context
   function updatePlaceholder(): void {
-    if (isLoading) {
+    if (!aiEnabled) {
+      chatTextarea.placeholder = 'AI features disabled — set API key';
+    } else if (isLoading) {
       chatTextarea.placeholder = 'Waiting for response...';
     } else if (selectedElement) {
       const tag = `<${selectedElement.tagName}>`;
@@ -613,6 +699,19 @@ export function createSidebar(container: HTMLElement): SidebarManager {
 
   // Initialize with chat tab active
   switchTab('chat');
+
+  // Check if AI is enabled on init
+  fetch('/api/config/status')
+    .then((res) => res.json())
+    .then((data: { aiEnabled?: boolean }) => {
+      aiEnabled = !!data.aiEnabled;
+      if (!aiEnabled) {
+        deactivateChat();
+      }
+    })
+    .catch(() => {
+      // Can't reach server — leave chat enabled (will fail on send)
+    });
 
   const manager: SidebarManager = {
     properties,

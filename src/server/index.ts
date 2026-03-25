@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBridgeInjector } from './inject.js';
 import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
-import { loadConfig, hasApiKey, type SiteForgeConfig } from './config.js';
+import { loadConfig, hasApiKey, setApiKey, type SiteForgeConfig } from './config.js';
 import { createChatRouter } from './routes/chat.js';
 import { createFilesRouter } from './routes/files.js';
 import { scanProject, type ProjectContext } from './project.js';
@@ -85,6 +85,25 @@ export function createServer(port = 3000, target?: ProxyTarget) {
       aiEnabled: hasApiKey(cfg),
       model: cfg.model,
     });
+  });
+
+  // API: Set API key at runtime (saves to ~/.siteforge/config.json and reloads config)
+  app.post('/api/config/set-key', (req, res) => {
+    const { apiKey } = req.body as { apiKey?: string };
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+      res.status(400).json({ error: 'Missing or empty apiKey' });
+      return;
+    }
+
+    try {
+      setApiKey(apiKey.trim());
+      // Reload config so the new key takes effect immediately
+      const newConfig = loadConfig(target?.projectDir);
+      app.locals.sfConfig = newConfig;
+      res.json({ success: true, aiEnabled: hasApiKey(newConfig), model: newConfig.model });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to save API key' });
+    }
   });
 
   // Set up preview routes with bridge injection if a target project is provided

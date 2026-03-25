@@ -226,7 +226,7 @@ src/
   - Files to modify: `src/editor/sidebar.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 18: No-API-key disabled state**
+- [x] **Task 18: No-API-key disabled state**
   - When no API key is configured, the chat tab should show a friendly setup guide
   - Display: SiteForge icon, "Set up AI to get started" heading, step-by-step instructions to set the API key (env var or config file), a text input where the user can paste their key and a "Save" button that writes it to `~/.siteforge/config.json`
   - After saving the key, the chat should immediately become active without restarting the server (POST to `/api/config/set-key` endpoint)
