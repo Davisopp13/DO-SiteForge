@@ -72,6 +72,8 @@ html, body {
   background: var(--sf-bg-tertiary);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Right properties panel */
@@ -233,4 +235,59 @@ html, body {
 .sf-ask-ai-btn svg {
   width: 14px;
   height: 14px;
+}
+
+/* Viewport toggle bar */
+.sf-viewport-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--sf-bg-secondary);
+  border-bottom: 1px solid var(--sf-border);
+  z-index: 15;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sf-viewport-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sf-viewport-btn {
+  width: 30px;
+  height: 28px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sf-text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.sf-viewport-btn:hover {
+  background: var(--sf-overlay);
+  color: var(--sf-text-primary);
+}
+
+.sf-viewport-btn.active {
+  background: rgba(55, 138, 221, 0.15);
+  color: var(--sf-accent);
+}
+
+.sf-viewport-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sf-viewport-dims {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  color: var(--sf-text-secondary);
+  white-space: nowrap;
 }

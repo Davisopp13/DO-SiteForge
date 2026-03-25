@@ -247,3 +247,30 @@
   - Dynamic `import('open')` works fine for browser launching, with silent catch for headless environments
   - `killDevServer()` from proxy.ts handles child process cleanup; `server.close()` handles Express
 ---
+
+## Iteration 16 - Task 16: README and developer docs
+- Created README.md with project description, installation, usage, supported project types, keyboard shortcuts table, architecture overview, development setup, and tech stack
+- npm scripts already existed in package.json from earlier tasks: dev, build, test, typecheck
+- All checks pass: typecheck, build, and tests (9/9)
+- Files changed: README.md, PRD.md
+- Learnings for future iterations:
+  - All npm scripts were already set up in Task 1 — just needed to verify they work
+  - README follows standard structure: install, usage, shortcuts, architecture, dev setup
+---
+
+## Iteration 17 - Task 17: Viewport toggle bar UI
+- Implemented `src/editor/viewport.ts` with `createViewport()` function
+- Four preset buttons with inline SVG icons: Mobile (phone, 375px), Tablet (tablet, 768px), Desktop (monitor, 100%), Custom (grid, 1024px)
+- Active viewport button gets highlighted state (same rgba accent pattern as toolbar)
+- Dimensions display in monospace to the right of buttons
+- Keyboard shortcuts 1-4 handled via `forge:viewportShortcut` event from keyboard.ts
+- Dispatches `forge:viewportChanged` event for future Task 18 (iframe resizing)
+- Updated canvas layout from absolute positioning to flex column so viewport bar sits above iframe container
+- Added CSS styles for `.sf-viewport-bar`, `.sf-viewport-btn`, `.sf-viewport-dims`
+- Files changed: src/editor/viewport.ts, src/editor/app.ts, src/editor/styles.css, src/editor/canvas.ts, PRD.md
+- Learnings for future iterations:
+  - Canvas div changed to `display: flex; flex-direction: column` — viewport bar is first child, iframe container flexes to fill remaining space
+  - Iframe container changed from `position: absolute; inset: 0` to `position: relative; flex: 1` to work with flex layout
+  - Viewport bar must be inserted before canvas creates its iframe container (init order: toolbar → viewport → canvas)
+  - `forge:viewportShortcut` event already dispatched by keyboard.ts from Task 13 — just needed to listen for it
+---

@@ -216,7 +216,7 @@ siteforge/
 
 ### Phase 1E: Responsive Viewport Toggle
 
-- [ ] **Task 17: Viewport toggle bar UI**
+- [x] **Task 17: Viewport toggle bar UI**
   - Create `src/editor/viewport.ts` — renders a viewport toggle bar at the top of the canvas area (between the toolbar/properties panel header row and the iframe)
   - Four preset buttons with inline SVG icons: Mobile (phone icon, 375px), Tablet (tablet icon, 768px), Desktop (monitor icon, 100% width), Custom (grid icon, shows slider)
   - Active viewport button gets highlighted state (same pattern as toolbar active state)

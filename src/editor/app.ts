@@ -6,6 +6,7 @@ import { createToolbar } from './toolbar.js';
 import { createProperties } from './properties.js';
 import { createHistory } from './history.js';
 import { createKeyboard } from './keyboard.js';
+import { createViewport } from './viewport.js';
 
 function init() {
   const toolbarEl = document.getElementById('sf-toolbar');
@@ -19,6 +20,9 @@ function init() {
 
   // Initialize toolbar (must be before overlay so mode badge is in the DOM)
   const toolbar = createToolbar(toolbarEl);
+
+  // Initialize viewport toggle bar (must be before canvas so it sits above iframe)
+  const viewport = createViewport(canvasEl);
 
   // Initialize canvas with iframe
   const canvas = createCanvas(canvasEl);

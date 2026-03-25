@@ -13,10 +13,11 @@ export function createCanvas(canvasEl: HTMLElement): CanvasManager {
   const container = document.createElement('div');
   container.id = 'sf-iframe-container';
   container.style.cssText = `
-    position: absolute;
-    inset: 0;
+    position: relative;
+    flex: 1;
     display: flex;
     justify-content: center;
+    overflow: hidden;
   `;
 
   // Create iframe pointing to /preview/
