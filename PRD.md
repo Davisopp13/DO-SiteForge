@@ -76,7 +76,7 @@ siteforge/
   - Create the full directory structure from the file tree above (empty files are fine)
   - Test: `npx tsc --noEmit` passes with no errors
 
-- [ ] **Task 2: Build the CLI with Commander.js**
+- [x] **Task 2: Build the CLI with Commander.js**
   - Create `bin/forge.ts` as the CLI entry with shebang `#!/usr/bin/env node`
   - Create `src/cli/index.ts` with Commander setup: program name "forge", version "0.1.0"
   - Add `open` command in `src/cli/commands/open.ts`: takes a directory argument, validates it exists, prints "Opening project at <dir>"

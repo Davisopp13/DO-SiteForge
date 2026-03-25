@@ -12,3 +12,15 @@
   - TypeScript 6 with "module": "ESNext" + "moduleResolution": "bundler" works for this setup
   - Express 5 is installed (v5.2.1)
 ---
+
+## Iteration 2 - Task 2: Build the CLI with Commander.js
+- Implemented `open` command: takes dir argument, validates existence, prints message
+- Implemented `new` command: takes name argument, prints stub message
+- Wired both commands into CLI via `program.addCommand()`
+- Fixed double shebang issue: removed shebang from source `bin/forge.ts` since tsup banner already adds it
+- Files changed: bin/forge.ts, src/cli/index.ts, src/cli/commands/open.ts, src/cli/commands/new.ts
+- Learnings for future iterations:
+  - tsup banner + source shebang = double shebang. Let tsup handle it via banner config only.
+  - Commander subcommands work well as separate `new Command('name')` exports added via `addCommand()`
+  - `bin` field in package.json already pointed to `dist/forge.js` from Task 1
+---
