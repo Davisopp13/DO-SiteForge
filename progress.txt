@@ -214,3 +214,21 @@
   - Viewport shortcuts dispatch events for future viewport.ts module to handle (Task 17)
   - Delete prevents removal of body/html elements as safety check
 ---
+
+## Iteration 14 - Task 14: Add element functionality
+- When Add tool is active and user clicks on canvas, inserts a new div (120x60px, light gray, rounded corners, "New block" text)
+- Bridge inserts element as child of whatever element is at the click point (falls back to body)
+- New element is immediately selected after insertion via `forge:elementInserted` bridge→editor message
+- Insertion recorded in history as `insert` operation — undo removes element, redo re-inserts it
+- Added `InsertElementMessage`, `RemoveElementMessage`, `ReinsertElementMessage` to protocol (editor→bridge)
+- Added `ElementInsertedMessage`, `ElementRemovedMessage` to protocol (bridge→editor)
+- Bridge handlers: `insertElement(x, y)`, `removeElement(xpath)`, `reinsertElement(parentXPath, childIndex, html)`
+- Overlay tracks active tool via `forge:toolChanged` event, shows crosshair cursor in add mode
+- History handles insert specially: undo/redo bypass reverseOperation/applyOperation pattern
+- Files changed: src/bridge/protocol.ts, src/bridge/bridge.ts, src/editor/overlay.ts, src/editor/history.ts, src/editor/app.ts, PRD.md
+- Learnings for future iterations:
+  - Insert undo/redo needs special handling since it's not a simple reverse (insert↔remove are different operations)
+  - Storing outerHTML + parent xpath + child index enables reliable re-insertion on redo
+  - Overlay's `activeTool` state driven by `forge:toolChanged` event avoids importing toolbar
+  - Bridge's `elementFromPoint` used to find parent for insertion — consistent with hover/select pattern
+---

@@ -194,7 +194,7 @@ siteforge/
   - Prevent shortcuts from firing when in text edit mode (except Escape)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 14: Add element functionality**
+- [x] **Task 14: Add element functionality**
   - When the Add tool is active and user clicks on the canvas, insert a new div element
   - The new div is a simple block: 120px wide, 60px tall, light gray background, rounded corners, centered text "New block"
   - Bridge inserts the element at the click position in the DOM

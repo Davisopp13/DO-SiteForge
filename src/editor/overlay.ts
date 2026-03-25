@@ -25,6 +25,7 @@ interface OverlayState {
   isTextEditing: boolean;
   pendingHoverRequest: boolean;
   drag: DragState | null;
+  activeTool: string;
 }
 
 export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): OverlayManager {
@@ -61,6 +62,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     isTextEditing: false,
     pendingHoverRequest: false,
     drag: null,
+    activeTool: 'select',
   };
 
   // Text edit mode indicator
@@ -100,6 +102,20 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         }
         break;
       }
+      case 'forge:elementInserted': {
+        // Auto-select the newly inserted element
+        handleSelect(data.element);
+        // Dispatch event for history tracking
+        window.dispatchEvent(new CustomEvent('forge:elementInserted', {
+          detail: {
+            element: data.element,
+            parentXPath: data.parentXPath,
+            childIndex: data.childIndex,
+            html: data.html,
+          },
+        }));
+        break;
+      }
       case 'forge:textEditComplete': {
         // Bridge signals that text editing has finished
         exitTextEditMode();
@@ -115,6 +131,17 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       }
     }
   });
+
+  // Listen for tool changes
+  window.addEventListener('forge:toolChanged', ((e: CustomEvent) => {
+    state.activeTool = e.detail?.tool || 'select';
+    // Change cursor based on tool
+    if (state.activeTool === 'add') {
+      overlayEl.style.cursor = 'crosshair';
+    } else {
+      overlayEl.style.cursor = 'default';
+    }
+  }) as EventListener);
 
   // Mouse events on overlay
   overlayEl.addEventListener('mousemove', (e: MouseEvent) => {
@@ -219,6 +246,19 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     }
 
     if (state.isTextEditing) return;
+
+    // Add tool: insert a new element at click position
+    if (state.activeTool === 'add') {
+      const iframeOffset = canvas.getIframeOffset();
+      const x = e.clientX - iframeOffset.x;
+      const y = e.clientY - iframeOffset.y;
+      canvas.sendToBridge({
+        type: 'forge:insertElement',
+        x,
+        y,
+      });
+      return;
+    }
 
     // Normal click — select the hovered element
     if (state.hoveredElement) {

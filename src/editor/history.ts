@@ -4,7 +4,7 @@ import type { CanvasManager } from './canvas.js';
 
 const MAX_HISTORY = 50;
 
-export type OperationType = 'move' | 'textEdit';
+export type OperationType = 'move' | 'textEdit' | 'insert';
 
 export interface MoveOperation {
   type: 'move';
@@ -22,7 +22,15 @@ export interface TextEditOperation {
   newText: string;
 }
 
-export type Operation = MoveOperation | TextEditOperation;
+export interface InsertOperation {
+  type: 'insert';
+  xpath: string;
+  parentXPath: string;
+  childIndex: number;
+  html: string;
+}
+
+export type Operation = MoveOperation | TextEditOperation | InsertOperation;
 
 export interface HistoryManager {
   push(op: Operation): void;
@@ -58,8 +66,16 @@ export function createHistory(canvas: CanvasManager): HistoryManager {
     const op = undoStack.pop();
     if (!op) return;
 
-    const reverse = reverseOperation(op);
-    applyOperation(reverse);
+    if (op.type === 'insert') {
+      // Undo insert = remove the element
+      canvas.sendToBridge({
+        type: 'forge:removeElement',
+        xpath: op.xpath,
+      });
+    } else {
+      const reverse = reverseOperation(op);
+      applyOperation(reverse);
+    }
     redoStack.push(op);
     updateIndicators();
   }
@@ -68,7 +84,17 @@ export function createHistory(canvas: CanvasManager): HistoryManager {
     const op = redoStack.pop();
     if (!op) return;
 
-    applyOperation(op);
+    if (op.type === 'insert') {
+      // Redo insert = re-insert the element
+      canvas.sendToBridge({
+        type: 'forge:reinsertElement',
+        parentXPath: op.parentXPath,
+        childIndex: op.childIndex,
+        html: op.html,
+      });
+    } else {
+      applyOperation(op);
+    }
     undoStack.push(op);
     updateIndicators();
   }
@@ -91,6 +117,9 @@ export function createHistory(canvas: CanvasManager): HistoryManager {
           oldText: op.newText,
           newText: op.oldText,
         };
+      case 'insert':
+        // Handled directly in undo/redo functions
+        return op;
     }
   }
 

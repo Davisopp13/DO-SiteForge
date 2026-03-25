@@ -271,6 +271,68 @@
     });
   }
 
+  // --- Insert element ---
+
+  function insertElement(x: number, y: number) {
+    // Find the element at the click point to determine parent
+    const targetEl = document.elementFromPoint(x, y);
+    const parent = targetEl && targetEl !== document.documentElement
+      ? targetEl
+      : document.body;
+
+    // Create the new block element
+    const newDiv = document.createElement('div');
+    newDiv.style.cssText = 'width: 120px; height: 60px; background: #e8e8e8; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: sans-serif; font-size: 14px; color: #333; position: relative; cursor: default;';
+    newDiv.textContent = 'New block';
+
+    parent.appendChild(newDiv);
+
+    const info = getElementInfo(newDiv);
+    const parentXPath = getXPath(parent);
+    const childIndex = Array.from(parent.children).indexOf(newDiv);
+
+    sendToEditor({
+      type: 'forge:elementInserted',
+      element: info,
+      parentXPath,
+      childIndex,
+      html: newDiv.outerHTML,
+    });
+  }
+
+  function removeElement(xpath: string) {
+    const element = getElementByXPath(xpath);
+    if (!element || element === document.body || element === document.documentElement) return;
+    element.parentElement?.removeChild(element);
+    sendToEditor({ type: 'forge:elementRemoved', xpath });
+  }
+
+  function reinsertElement(parentXPath: string, childIndex: number, html: string) {
+    const parent = getElementByXPath(parentXPath);
+    if (!parent) return;
+
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    const newEl = temp.firstElementChild;
+    if (!newEl) return;
+
+    const children = parent.children;
+    if (childIndex >= children.length) {
+      parent.appendChild(newEl);
+    } else {
+      parent.insertBefore(newEl, children[childIndex]);
+    }
+
+    const info = getElementInfo(newEl);
+    sendToEditor({
+      type: 'forge:elementInserted',
+      element: info,
+      parentXPath,
+      childIndex,
+      html,
+    });
+  }
+
   // --- Undo/Redo operations ---
 
   function undoRedoMove(xpath: string, deltaX: number, deltaY: number) {
@@ -386,6 +448,21 @@
 
       case 'forge:nudgeElement': {
         nudgeElement(data.xpath, data.deltaX, data.deltaY);
+        break;
+      }
+
+      case 'forge:insertElement': {
+        insertElement(data.x, data.y);
+        break;
+      }
+
+      case 'forge:removeElement': {
+        removeElement(data.xpath);
+        break;
+      }
+
+      case 'forge:reinsertElement': {
+        reinsertElement(data.parentXPath, data.childIndex, data.html);
         break;
       }
     }

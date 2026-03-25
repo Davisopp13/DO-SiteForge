@@ -93,6 +93,24 @@ export interface NudgeElementMessage {
   deltaY: number;
 }
 
+export interface InsertElementMessage {
+  type: 'forge:insertElement';
+  x: number;
+  y: number;
+}
+
+export interface RemoveElementMessage {
+  type: 'forge:removeElement';
+  xpath: string;
+}
+
+export interface ReinsertElementMessage {
+  type: 'forge:reinsertElement';
+  parentXPath: string;
+  childIndex: number;
+  html: string;
+}
+
 export type EditorToBridgeMessage =
   | GetElementAtPointMessage
   | GetElementByXPathMessage
@@ -104,7 +122,10 @@ export type EditorToBridgeMessage =
   | UndoRedoMoveMessage
   | UndoRedoTextMessage
   | DeleteElementMessage
-  | NudgeElementMessage;
+  | NudgeElementMessage
+  | InsertElementMessage
+  | RemoveElementMessage
+  | ReinsertElementMessage;
 
 // Messages from bridge -> editor
 export interface HoverMessage {
@@ -154,6 +175,19 @@ export interface NudgeCompleteMessage {
   totalDeltaY: number;
 }
 
+export interface ElementInsertedMessage {
+  type: 'forge:elementInserted';
+  element: ElementInfo;
+  parentXPath: string;
+  childIndex: number;
+  html: string;
+}
+
+export interface ElementRemovedMessage {
+  type: 'forge:elementRemoved';
+  xpath: string;
+}
+
 export type BridgeToEditorMessage =
   | HoverMessage
   | SelectMessage
@@ -162,4 +196,6 @@ export type BridgeToEditorMessage =
   | TextEditCompleteMessage
   | MoveCompleteMessage
   | ElementDeletedMessage
-  | NudgeCompleteMessage;
+  | NudgeCompleteMessage
+  | ElementInsertedMessage
+  | ElementRemovedMessage;

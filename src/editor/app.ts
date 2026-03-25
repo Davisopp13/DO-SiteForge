@@ -73,6 +73,20 @@ function init() {
     }
   }) as EventListener);
 
+  // Listen for element insertions to record in history
+  window.addEventListener('forge:elementInserted', ((e: CustomEvent) => {
+    const { element, parentXPath, childIndex, html } = e.detail || {};
+    if (element && parentXPath !== undefined && html) {
+      history.push({
+        type: 'insert',
+        xpath: element.xpath,
+        parentXPath,
+        childIndex,
+        html,
+      });
+    }
+  }) as EventListener);
+
   // Listen for selection changes to update properties panel
   window.addEventListener('forge:selectionChanged', ((e: CustomEvent) => {
     properties.update(e.detail?.element || null);
