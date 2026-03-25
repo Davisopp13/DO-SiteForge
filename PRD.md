@@ -244,7 +244,7 @@ src/
   - Files to modify: `src/editor/keyboard.ts`, `src/editor/sidebar.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 20: Wire everything end-to-end and update README**
+- [x] **Task 20: Wire everything end-to-end and update README**
   - Verify the full flow works: select element → open chat → type message → context is sent → Claude responds with code → file changes displayed → apply changes → canvas updates via HMR
   - Update `src/cli/commands/open.ts` startup message to show AI status: "AI: Ready (claude-sonnet-4-20250514)" or "AI: Disabled (no API key)"
   - Update README.md with: AI chat usage instructions, API key setup, keyboard shortcuts for chat, example conversations

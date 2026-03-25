@@ -675,3 +675,17 @@
   - Escape handler checks document.activeElement against sidebar.inputEl to detect chat input focus
   - `scrollTo({ behavior: 'smooth' })` is well-supported and avoids needing custom animation
 ---
+
+## Iteration 42 - Task 20: Wire everything end-to-end and update README
+- Startup message already showed AI status from iteration 24 (Task 1) — no changes needed to open.ts
+- Updated README.md with: AI chat usage instructions, API key setup (env var, project config, global config, inline setup), example conversations, configuration options
+- Added AI Chat keyboard shortcuts table (Cmd+K, Cmd+L, Enter, Shift+Enter, Escape)
+- Updated architecture section to include all new AI-related files (ai.ts, config.ts, project.ts, routes/chat.ts, routes/files.ts, sidebar.ts, context.ts, markdown.ts, filechanges.ts)
+- Updated tool shortcuts (V/M merged, P for preview added)
+- Verified: `npm run typecheck` and `npm run build` both pass
+- Files changed: README.md, PRD.md
+- Learnings for future iterations:
+  - All Phase 2 tasks are now complete — 20/20 tasks done
+  - The full AI chat flow: select element → type message → context serialized → POST /api/chat → SSE stream → markdown rendered → file changes parsed → apply writes files → HMR updates canvas
+  - No external markdown library needed — self-contained regex parser handles Claude's output subset
+---
