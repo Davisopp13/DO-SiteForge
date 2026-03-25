@@ -91,11 +91,31 @@ function renderPlaceholder(): string {
   `;
 }
 
+function renderPreviewPlaceholder(): string {
+  return `
+    <div class="sf-properties-placeholder">
+      Preview mode — interactions disabled
+    </div>
+  `;
+}
+
 export function createProperties(container: HTMLElement): PropertiesManager {
+  let isPreview = false;
   container.innerHTML = renderPlaceholder();
+
+  // Listen for preview mode changes
+  window.addEventListener('forge:previewModeChanged', ((e: CustomEvent) => {
+    isPreview = e.detail?.preview ?? false;
+    if (isPreview) {
+      container.innerHTML = renderPreviewPlaceholder();
+    } else {
+      container.innerHTML = renderPlaceholder();
+    }
+  }) as EventListener);
 
   const manager: PropertiesManager = {
     update(element: ElementInfo | null) {
+      if (isPreview) return; // Don't update properties while in preview mode
       if (!element) {
         container.innerHTML = renderPlaceholder();
       } else {

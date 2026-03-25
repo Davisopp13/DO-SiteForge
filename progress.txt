@@ -311,6 +311,38 @@
   - Must sync slider.value when switching to custom preset to keep slider thumb in correct position
 ---
 
+## Iteration 22 - Patch 2: Add Preview mode
+- Added 'preview' to ToolType in toolbar.ts (now 'select' | 'text' | 'preview' | 'add')
+- Added eye icon SVG and Preview button between Text and Add in toolbar
+- Mode badge shows green styling (rgba(58,125,68,0.1)) when preview active
+- P shortcut added in keyboard.ts (p → 'preview'); M still aliases to select
+- overlay.ts: forge:toolChanged handler calls enterPreviewMode()/exitPreviewMode()
+- enterPreviewMode(): clears selection/hover, sets pointerEvents = 'none', dispatches forge:previewModeChanged
+- exitPreviewMode(): restores pointerEvents = 'auto', dispatches forge:previewModeChanged
+- isPreviewMode exposed on OverlayManager interface
+- properties.ts: listens for forge:previewModeChanged, shows "Preview mode — interactions disabled" while active; update() is a no-op during preview
+- Files changed: src/editor/toolbar.ts, src/editor/overlay.ts, src/editor/keyboard.ts, src/editor/properties.ts
+- Learnings for future iterations:
+  - pointerEvents = 'none' on the overlay already fully enables iframe interaction — no iframe changes needed
+  - Dispatching forge:previewModeChanged decouples overlay from properties panel cleanly
+  - Mode badge conditional styling works by overriding inline styles in updateModeBadge()
+  - isPreview guard in properties.update() prevents stale element data from overwriting preview placeholder
+---
+
+## Iteration 21 - Patch 1: Merge Select and Move into one tool
+- Removed 'move' from ToolType (now 'select' | 'text' | 'add')
+- Removed Move button from toolbar, removed from ICONS/TOOL_LABELS/TOOL_SHORTCUTS
+- M key in keyboard.ts changed to alias for 'select' (same event, tool='select')
+- Added updateCursor() function in overlay.ts: grab when hovering selected element, grabbing during drag, crosshair for add tool, default otherwise
+- Called updateCursor() from: tool changed handler, hover response, mousedown, mouseup, mouseleave, exitTextEditMode
+- Drag already worked in select mode (no tool gate existed) — just needed cursor behavior
+- Files changed: src/editor/toolbar.ts, src/editor/overlay.ts, src/editor/keyboard.ts
+- Learnings for future iterations:
+  - Drag logic in overlay.ts was already tool-agnostic — no gate to remove
+  - updateCursor() centralizes all cursor logic cleanly; call it anywhere state changes
+  - ToolType change in toolbar.ts propagates to keyboard.ts via import — both must be updated
+---
+
 ## Iteration 20 - Task 20: Overlay recalculation on viewport change
 - Enhanced viewport change handling with two-phase approach: `forge:viewport-transitioning` (start) and `forge:viewport-changed` (complete)
 - Canvas.ts now waits for CSS `transitionend` event before dispatching `forge:viewport-changed`, with 500ms fallback timeout

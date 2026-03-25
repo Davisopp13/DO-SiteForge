@@ -1,6 +1,6 @@
 // Toolbar — left toolbar with tool switching (Select, Text, Add)
 
-export type ToolType = 'select' | 'text' | 'add';
+export type ToolType = 'select' | 'text' | 'preview' | 'add';
 
 export interface ToolbarManager {
   activeTool: ToolType;
@@ -17,6 +17,10 @@ const ICONS: Record<ToolType, string> = {
     <path d="M9 4 L9 15"/>
     <path d="M6.5 15 L11.5 15"/>
   </svg>`,
+  preview: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/>
+  </svg>`,
   add: `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M9 4 L9 14"/>
     <path d="M4 9 L14 9"/>
@@ -26,12 +30,14 @@ const ICONS: Record<ToolType, string> = {
 const TOOL_LABELS: Record<ToolType, string> = {
   select: 'Select',
   text: 'Text',
+  preview: 'Preview',
   add: 'Add',
 };
 
 const TOOL_SHORTCUTS: Record<string, ToolType> = {
   v: 'select',
   t: 'text',
+  p: 'preview',
   a: 'add',
 };
 
@@ -40,7 +46,7 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
   const buttons: Map<ToolType, HTMLButtonElement> = new Map();
 
   // Create tool buttons
-  const tools: ToolType[] = ['select', 'text', 'add'];
+  const tools: ToolType[] = ['select', 'text', 'preview', 'add'];
   for (const tool of tools) {
     const btn = document.createElement('button');
     btn.className = 'sf-tool-btn';
@@ -87,12 +93,24 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
 
   function updateModeBadge() {
     modeBadge.textContent = `${TOOL_LABELS[activeTool]} mode`;
+    if (activeTool === 'preview') {
+      modeBadge.style.background = 'rgba(58, 125, 68, 0.1)';
+      modeBadge.style.color = '#3A7D44';
+      modeBadge.style.borderColor = 'rgba(58, 125, 68, 0.3)';
+    } else {
+      modeBadge.style.background = 'var(--sf-bg-secondary)';
+      modeBadge.style.color = 'var(--sf-text-secondary)';
+      modeBadge.style.borderColor = 'var(--sf-border)';
+    }
   }
 
   // Listen for text edit mode changes to update badge
   window.addEventListener('forge:textEditModeChanged', ((e: CustomEvent) => {
     if (e.detail?.editing) {
       modeBadge.textContent = 'Text edit mode';
+      modeBadge.style.background = 'var(--sf-bg-secondary)';
+      modeBadge.style.color = 'var(--sf-text-secondary)';
+      modeBadge.style.borderColor = 'var(--sf-border)';
     } else {
       updateModeBadge();
     }

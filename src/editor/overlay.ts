@@ -8,6 +8,7 @@ export interface OverlayManager {
   overlayEl: HTMLElement;
   selectedElement: ElementInfo | null;
   isTextEditing: boolean;
+  isPreviewMode: boolean;
 }
 
 interface DragState {
@@ -24,6 +25,7 @@ interface OverlayState {
   selectedElement: ElementInfo | null;
   isTextEditing: boolean;
   isTransitioning: boolean;
+  isPreviewMode: boolean;
   pendingHoverRequest: boolean;
   drag: DragState | null;
   activeTool: string;
@@ -62,6 +64,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     selectedElement: null,
     isTextEditing: false,
     isTransitioning: false,
+    isPreviewMode: false,
     pendingHoverRequest: false,
     drag: null,
     activeTool: 'select',
@@ -153,7 +156,15 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
   // Listen for tool changes
   window.addEventListener('forge:toolChanged', ((e: CustomEvent) => {
+    const prevTool = state.activeTool;
     state.activeTool = e.detail?.tool || 'select';
+
+    if (state.activeTool === 'preview') {
+      enterPreviewMode();
+    } else if (prevTool === 'preview') {
+      exitPreviewMode();
+    }
+
     updateCursor();
   }) as EventListener);
 
@@ -323,6 +334,37 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     state.hoveredElement = null;
     drawHoverHighlight(null);
   });
+
+  // --- Preview mode ---
+
+  function enterPreviewMode() {
+    state.isPreviewMode = true;
+
+    // Clear any current selection and hover highlights
+    handleSelect(null);
+    state.hoveredElement = null;
+    drawHoverHighlight(null);
+
+    // Pass all mouse events through to the iframe
+    overlayEl.style.pointerEvents = 'none';
+
+    // Dispatch event so properties panel can update
+    window.dispatchEvent(new CustomEvent('forge:previewModeChanged', {
+      detail: { preview: true },
+    }));
+  }
+
+  function exitPreviewMode() {
+    state.isPreviewMode = false;
+
+    // Re-enable overlay interactions
+    overlayEl.style.pointerEvents = 'auto';
+
+    // Dispatch event so properties panel can update
+    window.dispatchEvent(new CustomEvent('forge:previewModeChanged', {
+      detail: { preview: false },
+    }));
+  }
 
   // --- Text edit mode ---
 
@@ -526,6 +568,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     overlayEl,
     get selectedElement() { return state.selectedElement; },
     get isTextEditing() { return state.isTextEditing; },
+    get isPreviewMode() { return state.isPreviewMode; },
   };
 
   return manager;

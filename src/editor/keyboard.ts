@@ -21,6 +21,7 @@ const TOOL_SHORTCUTS: Record<string, ToolType> = {
   v: 'select',
   m: 'select', // M is an alias for V (select)
   t: 'text',
+  p: 'preview',
   a: 'add',
 };
 
