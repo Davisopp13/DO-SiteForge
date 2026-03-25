@@ -139,3 +139,20 @@
   - Re-querying element info after text edit is important since textContent and boundingRect may change
   - Custom events (`forge:textEdited`, `forge:textEditModeChanged`) decouple overlay from history and toolbar modules
 ---
+
+## Iteration 10 - Task 10: Left toolbar with tool switching
+- Implemented `src/editor/toolbar.ts` with `createToolbar()` function
+- Four tool buttons with inline SVG icons: Select (arrow), Move (4-directional arrows), Text (T), Add (plus)
+- Active tool gets highlighted background (--sf-accent at 15% opacity) via `.active` class
+- Keyboard shortcuts: V=select, M=move, T=text, A=add (disabled during text edit mode and input focus)
+- Mode badge positioned at top-left of canvas showing current mode ("Select mode", "Move mode", etc.)
+- Badge updates to "Text edit mode" when `forge:textEditModeChanged` fires
+- Dispatches `forge:toolChanged` event so overlay can change behavior based on active tool
+- Updated `app.ts` to import and initialize toolbar before canvas/overlay
+- Files changed: src/editor/toolbar.ts, src/editor/app.ts, PRD.md, progress.txt
+- Learnings for future iterations:
+  - CSS styles for `.sf-tool-btn` and `.sf-toolbar-sep` already existed in styles.css from Task 4
+  - Toolbar dispatches `forge:toolChanged` custom event — overlay should listen for this in future tasks
+  - Mode badge tracks text edit mode via `forge:textEditModeChanged` event from overlay
+  - Keyboard shortcuts check `modeBadge.textContent` to detect text editing state (avoids circular import)
+---

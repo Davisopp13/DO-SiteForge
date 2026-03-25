@@ -154,7 +154,7 @@ siteforge/
   - Show a "Editing text" indicator in the toolbar or overlay
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 10: Left toolbar with tool switching**
+- [x] **Task 10: Left toolbar with tool switching**
   - Create `src/editor/toolbar.ts` — renders the 44px-wide left toolbar
   - Four tool buttons with SVG icons (simple, hand-drawn SVG paths — no icon library): Select (arrow cursor), Move (four-directional arrows), Text (T character), Add (plus sign)
   - Active tool gets a highlighted background (--sf-accent color at 15% opacity)

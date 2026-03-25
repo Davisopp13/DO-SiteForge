@@ -2,16 +2,20 @@
 
 import { createCanvas } from './canvas.js';
 import { createOverlay } from './overlay.js';
+import { createToolbar } from './toolbar.js';
 
 function init() {
-  const toolbar = document.getElementById('sf-toolbar');
+  const toolbarEl = document.getElementById('sf-toolbar');
   const canvasEl = document.getElementById('sf-canvas');
   const properties = document.getElementById('sf-properties');
 
-  if (!toolbar || !canvasEl || !properties) {
+  if (!toolbarEl || !canvasEl || !properties) {
     console.error('SiteForge: Missing required DOM elements');
     return;
   }
+
+  // Initialize toolbar (must be before overlay so mode badge is in the DOM)
+  const toolbar = createToolbar(toolbarEl);
 
   // Initialize canvas with iframe
   const canvas = createCanvas(canvasEl);
