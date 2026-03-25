@@ -467,3 +467,19 @@
   - `getCanvasContext()` runs page + selection queries in parallel via Promise.all for speed
   - Bridge `getSelectionInfo` reuses existing `getElementByXPath()` — no new DOM traversal logic needed
 ---
+
+## Iteration 30 - Task 7: Project file context
+- Created `src/server/project.ts` with `scanProject()` function
+- `ProjectContext` type: `{ type, framework, hasTailwind, hasTypeScript, mainFiles }`
+- `detectProjectType()`: reads package.json deps for next/astro/vite, falls back to static
+- `collectMainFiles()`: gathers root config files + top-level entries from src/, app/, pages/ (max 30)
+- `hasFile()` helper for checking tailwind.config.* and tsconfig.json
+- Updated `src/server/ai.ts`: imports `ProjectContext`, added `projectContext?` field to `PageContext`, `buildSystemPrompt()` merges projectContext fields into top-level context before prompt assembly
+- Updated `src/server/index.ts`: imports `scanProject`, scans project on startup if target projectDir provided, stores as `app.locals.sfProjectContext`
+- Files changed: src/server/project.ts (new), src/server/ai.ts, src/server/index.ts, PRD.md
+- Learnings for future iterations:
+  - `scanProject()` is sync (uses fs.existsSync/readFileSync) — fine for startup, not hot path
+  - ProjectContext merging in buildSystemPrompt normalizes two sources of truth (editor-side context.ts fields vs server-side project.ts)
+  - `app.locals.sfProjectContext` available to route handlers for injecting into chat context
+  - mainFiles capped at 30 entries to keep system prompt compact
+---

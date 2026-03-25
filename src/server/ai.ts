@@ -1,4 +1,5 @@
 import type { SiteForgeConfig } from './config.js';
+import type { ProjectContext } from './project.js';
 
 // --- Types ---
 
@@ -36,6 +37,7 @@ export interface PageContext {
   hasTailwind?: boolean;
   hasTypeScript?: boolean;
   mainFiles?: string[];
+  projectContext?: ProjectContext;
 }
 
 export interface StreamChatOptions {
@@ -108,6 +110,17 @@ function buildFrameworkGuidelines(context?: PageContext): string {
 }
 
 export function buildSystemPrompt(context?: PageContext): string {
+  // If projectContext is provided, merge its fields into the top-level context
+  // so the rest of the prompt builder can use them uniformly
+  if (context?.projectContext) {
+    const pc = context.projectContext;
+    if (!context.projectType) context.projectType = pc.type;
+    if (!context.framework) context.framework = pc.framework;
+    if (context.hasTailwind === undefined) context.hasTailwind = pc.hasTailwind;
+    if (context.hasTypeScript === undefined) context.hasTypeScript = pc.hasTypeScript;
+    if (!context.mainFiles || context.mainFiles.length === 0) context.mainFiles = pc.mainFiles;
+  }
+
   let prompt = BASE_SYSTEM_PROMPT;
 
   // Add framework-specific guidelines

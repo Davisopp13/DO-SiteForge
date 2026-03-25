@@ -104,7 +104,7 @@ src/
   - Files to modify: `src/editor/context.ts`, `src/bridge/protocol.ts`, `src/bridge/bridge.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 7: Project file context**
+- [x] **Task 7: Project file context**
   - Extend the server-side context with basic project awareness
   - On startup, scan the project directory for key files: `package.json` (deps), `tailwind.config.*` (Tailwind present?), `tsconfig.json` (TypeScript?), `src/` or `app/` directory listing (top-level files only)
   - Store as `ProjectContext`: `{ type, framework, hasTailwind, hasTypeScript, mainFiles: string[] }`

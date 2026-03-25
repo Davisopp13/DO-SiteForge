@@ -6,6 +6,7 @@ import { createBridgeInjector } from './inject.js';
 import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
 import { loadConfig, hasApiKey, type SiteForgeConfig } from './config.js';
 import { createChatRouter } from './routes/chat.js';
+import { scanProject, type ProjectContext } from './project.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,8 +28,14 @@ export function createServer(port = 3000, target?: ProxyTarget) {
   // Load AI config (project dir from target, or undefined)
   const config = loadConfig(target?.projectDir);
 
-  // Expose config for route handlers
+  // Scan project directory for framework/tooling context
+  const projectContext: ProjectContext | undefined = target?.projectDir
+    ? scanProject(target.projectDir)
+    : undefined;
+
+  // Expose config and project context for route handlers
   app.locals.sfConfig = config;
+  app.locals.sfProjectContext = projectContext;
 
   // After tsup build: __dirname is dist/src/server/
   // Project root is 3 levels up from there
