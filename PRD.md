@@ -209,7 +209,7 @@ siteforge/
   - Create a test fixture at `test/fixtures/static-site/index.html` — a simple HTML page with a hero section, two cards, a CTA, and a footer (styled with inline styles so it works without a build step)
   - Test: `npx tsup && node dist/forge.js open ./test/fixtures/static-site/` opens the browser and shows the site with a working overlay
 
-- [ ] **Task 16: README and developer docs**
+- [x] **Task 16: README and developer docs**
   - Write README.md with: project description, installation instructions (`npm install -g siteforge`), usage (`forge open ./my-project`), keyboard shortcuts table, architecture overview (brief), development setup (`npm run dev`)
   - Add npm scripts to package.json: `dev` (tsup --watch), `build` (tsup), `test` (vitest run), `typecheck` (tsc --noEmit)
   - Test: `npm run typecheck && npm run build` both pass
