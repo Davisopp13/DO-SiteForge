@@ -112,7 +112,7 @@ siteforge/
   - Wire this into the Express server from Task 4
   - Test: `npx tsup && node dist/forge.js open ./test-fixtures/static-site/` — create a test fixture with a simple index.html, verify localhost:3000/preview/ shows the site content
 
-- [ ] **Task 6: Bridge script — iframe-to-editor communication**
+- [x] **Task 6: Bridge script — iframe-to-editor communication**
   - Create `src/bridge/protocol.ts` with TypeScript types for messages: `ElementInfo` (tagName, id, className, computedStyles subset, boundingRect, textContent, xpath), `HoverMessage`, `SelectMessage`, `ElementInfoResponse`, `MoveMessage`, `TextEditMessage`
   - Create `src/bridge/bridge.ts` — the script injected into the iframe
   - Bridge listens for postMessage from the editor overlay

@@ -70,3 +70,26 @@
   - `createServer()` now accepts optional `ProxyTarget` to set up preview routes
   - For proxied dev servers, `http-proxy-middleware` handles the proxy with error fallback page
 ---
+
+## Iteration 6 - Task 6: Bridge script — iframe-to-editor communication
+- Created `src/bridge/protocol.ts` with full TypeScript types: `ElementInfo`, `ElementRect`, all editor-to-bridge messages (`GetElementAtPoint`, `GetElementByXPath`, `GetAllEditableElements`, `Move`, `TextEditStart`, `TextEditEnd`), all bridge-to-editor messages (`Hover`, `Select`, `ElementInfoResponse`, `EditableElementsResponse`, `TextEditComplete`, `MoveComplete`)
+- Created `src/bridge/bridge.ts` as self-contained IIFE script:
+  - `getXPath()` generates unique XPath for any DOM element (uses id shortcut or positional path)
+  - `getElementByXPath()` resolves XPath back to DOM element
+  - `getElementInfo()` extracts tag, id, class, xpath, text, bounding rect, and computed styles
+  - `getElementAtPoint(x, y)` uses `document.elementFromPoint()`
+  - `getAllEditableElements()` uses TreeWalker to find elements with direct text nodes
+  - `handleMove()` applies `transform: translate()` with opacity reduction
+  - `startTextEdit()` / `endTextEdit()` manages contentEditable with focus ring
+  - Mouse event forwarding: mousemove sends hover, click sends select
+  - All messages prefixed with "forge:" to avoid conflicts with target site
+  - Double-init prevention via `__forgeBridgeInitialized` flag
+- Bridge served at `/forge-bridge.js` (confirmed 200 response, 8KB)
+- Files changed: src/bridge/protocol.ts, src/bridge/bridge.ts, PRD.md
+- Learnings for future iterations:
+  - Bridge script is IIFE so all types must be duplicated (can't import from protocol.ts)
+  - protocol.ts serves as the shared type contract for editor code that CAN import it
+  - `document.elementFromPoint()` returns null for html/body — need null checks
+  - TreeWalker with FILTER_REJECT skips entire subtrees (good for script/style)
+  - contentEditable blur handler must clean up event listeners to avoid leaks
+---
