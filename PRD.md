@@ -122,7 +122,7 @@ src/
   - Files to modify: `src/editor/sidebar.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 8: Undo support for Claude Code writes**
+- [x] **Task 8: Undo support for Claude Code writes**
   - When Claude Code writes files directly, the user should be able to undo those changes
   - Before a Claude Code chat session starts, snapshot the files that might be affected (this is hard to predict — so instead, use git)
   - Check if the project has a git repo. If yes: before each Claude Code session, store the current git HEAD as a restore point. Add an "Undo AI changes" button to the file change card that runs `git checkout -- <filepath>` for each changed file.

@@ -216,8 +216,9 @@ export interface WatchedFileChange {
  * Shows filename, created/modified/deleted badge, and a "View" button
  * that fetches and displays file content in an expandable code block.
  * No "Apply changes" button since files are already written.
+ * If gitRef is provided, shows an "Undo AI changes" button that restores files.
  */
-export function renderDirectWriteChanges(changes: WatchedFileChange[]): HTMLElement {
+export function renderDirectWriteChanges(changes: WatchedFileChange[], gitRef?: string | null): HTMLElement {
   const container = document.createElement('div');
   container.className = 'sf-file-changes sf-file-changes-direct';
 
@@ -296,6 +297,55 @@ export function renderDirectWriteChanges(changes: WatchedFileChange[]): HTMLElem
     }
 
     container.appendChild(card);
+  }
+
+  // Undo button (only if git ref is available)
+  if (gitRef) {
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'sf-undo-btn';
+    undoBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Undo AI changes`;
+
+    undoBtn.addEventListener('click', async () => {
+      undoBtn.disabled = true;
+      undoBtn.textContent = 'Undoing...';
+
+      try {
+        const res = await fetch('/api/chat/undo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json() as {
+          restored?: string[];
+          failed?: { filepath: string; error?: string }[];
+          error?: string;
+        };
+
+        if (res.ok && data.restored) {
+          const count = data.restored.length;
+          undoBtn.classList.add('sf-undo-btn-done');
+          undoBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Restored ${count} file${count !== 1 ? 's' : ''}`;
+          if (data.failed && data.failed.length > 0) {
+            undoBtn.innerHTML += ` (${data.failed.length} failed)`;
+          }
+        } else {
+          undoBtn.classList.add('sf-undo-btn-error');
+          undoBtn.textContent = data.error || 'Undo failed';
+          undoBtn.disabled = false;
+        }
+      } catch {
+        undoBtn.classList.add('sf-undo-btn-error');
+        undoBtn.textContent = 'Undo failed — connection error';
+        undoBtn.disabled = false;
+      }
+    });
+
+    container.appendChild(undoBtn);
+  } else if (changes.length > 0) {
+    // No git — show warning
+    const warning = document.createElement('div');
+    warning.className = 'sf-undo-warning';
+    warning.textContent = 'Undo not available — initialize git for undo support';
+    container.appendChild(warning);
   }
 
   return container;

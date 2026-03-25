@@ -802,3 +802,20 @@
   - Provider badge uses classList to switch between cc/api styles — no inline styles needed
   - Setup guide recommendation uses `<a target="_blank">` for external link to Claude Code docs
 ---
+
+## Iteration 38 - Task 8: Undo support for Claude Code writes
+- Created `src/server/git.ts` with `isGitRepo()`, `getHeadRef()`, `restoreFile()`, `restoreFiles()` helpers
+- `restoreFile()` checks if file existed at ref via `git cat-file -e`, restores via `git checkout` or deletes if newly created
+- Updated `src/server/routes/chat.ts`: stores git HEAD before Claude Code sessions, includes `gitRef` in SSE files event, added `POST /api/chat/undo` endpoint
+- `lastSessionSnapshot` tracks ref + file list; undo endpoint calls `restoreFiles()` and clears snapshot (one-time undo)
+- Updated `src/editor/filechanges.ts`: `renderDirectWriteChanges()` accepts optional `gitRef` param, shows "Undo AI changes" button with undo icon when git available, shows warning when no git
+- Updated `src/editor/sidebar.ts`: parses `gitRef` from SSE files event, passes to `renderDirectWriteChanges()`
+- Undo button states: default → "Undoing..." → "Restored N files" (success) or error message (failure)
+- Files changed: src/server/git.ts (new), src/server/routes/chat.ts, src/editor/filechanges.ts, src/editor/sidebar.ts, PRD.md
+- Learnings for future iterations:
+  - `git cat-file -e <ref>:<path>` is the reliable way to check if a file existed at a commit
+  - `git checkout <ref> -- <path>` restores a file without affecting other files or HEAD
+  - `lastSessionSnapshot` is simple module-level state — only supports undo of the most recent session
+  - SSE files event extended with `gitRef` field for frontend to know undo is available
+  - Undo button disabled after successful undo to prevent double-undo
+---

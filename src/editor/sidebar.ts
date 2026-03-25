@@ -327,6 +327,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       let renderTimer: ReturnType<typeof setTimeout> | null = null;
       let needsRender = false;
       let directWriteChanges: WatchedFileChange[] = [];
+      let directWriteGitRef: string | null = null;
 
       function scheduleRender(): void {
         if (renderTimer) return;
@@ -394,9 +395,12 @@ export function createSidebar(container: HTMLElement): SidebarManager {
               }
             } else if (eventType === 'files' && eventData) {
               try {
-                const parsed = JSON.parse(eventData) as { changes?: WatchedFileChange[] };
+                const parsed = JSON.parse(eventData) as { changes?: WatchedFileChange[]; gitRef?: string | null };
                 if (parsed.changes && Array.isArray(parsed.changes)) {
                   directWriteChanges.push(...parsed.changes);
+                }
+                if (parsed.gitRef) {
+                  directWriteGitRef = parsed.gitRef;
                 }
               } catch {
                 // Skip malformed files event
@@ -427,7 +431,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
 
       // Render direct write file changes (from Claude Code watcher)
       if (directWriteChanges.length > 0) {
-        const directWritesEl = renderDirectWriteChanges(directWriteChanges);
+        const directWritesEl = renderDirectWriteChanges(directWriteChanges, directWriteGitRef);
         assistantEl.appendChild(directWritesEl);
         scrollToBottom();
       }

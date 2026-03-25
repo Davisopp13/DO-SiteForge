@@ -3,6 +3,7 @@ import { Router as createRouter } from 'express';
 import type { ChatMessage, PageContext } from '../ai.js';
 import type { AIProvider, ChatParams } from '../providers/types.js';
 import type { FileWatcher } from '../watcher.js';
+import { isGitRepo, getHeadRef, restoreFiles } from '../git.js';
 
 /**
  * POST /api/chat
@@ -14,6 +15,10 @@ import type { FileWatcher } from '../watcher.js';
  */
 export function createChatRouter(): Router {
   const router = createRouter();
+
+  // Store session snapshots: sessionId → { ref, files[] }
+  // Used for undo support in Claude Code mode
+  let lastSessionSnapshot: { ref: string; files: string[] } | null = null;
 
   router.post('/', async (req: Request, res: Response) => {
     const provider = req.app.locals.sfProvider as AIProvider;
@@ -47,6 +52,14 @@ export function createChatRouter(): Router {
     const fileWatcher = req.app.locals.sfFileWatcher as FileWatcher | null;
     const useWatcher = provider.supportsDirectFileWrites && fileWatcher;
     const sessionStart = Date.now();
+
+    // Snapshot git HEAD before Claude Code session for undo support
+    const projectDir = (req.app.locals.sfProjectDir as string) || process.cwd();
+    let gitRef: string | null = null;
+    if (useWatcher && isGitRepo(projectDir)) {
+      gitRef = getHeadRef(projectDir);
+    }
+
     if (useWatcher) {
       fileWatcher!.startWatching();
     }
@@ -81,7 +94,15 @@ export function createChatRouter(): Router {
         fileWatcher!.stopWatching();
         const changes = fileWatcher!.getRecentChanges(sessionStart);
         if (changes.length > 0) {
-          res.write(`event: files\ndata: ${JSON.stringify({ changes })}\n\n`);
+          // Store snapshot for undo support
+          if (gitRef) {
+            lastSessionSnapshot = {
+              ref: gitRef,
+              files: changes.map((c) => c.filepath),
+            };
+          }
+          // Include gitRef so frontend knows undo is available
+          res.write(`event: files\ndata: ${JSON.stringify({ changes, gitRef })}\n\n`);
         }
       }
 
@@ -106,6 +127,30 @@ export function createChatRouter(): Router {
     // Handle client disconnect
     req.on('close', () => {
       // Client disconnected — stream will naturally end
+    });
+  });
+
+  // POST /api/chat/undo
+  // Restores files changed by the last Claude Code session using git
+  router.post('/undo', (req: Request, res: Response) => {
+    if (!lastSessionSnapshot) {
+      res.status(400).json({ error: 'No changes to undo' });
+      return;
+    }
+
+    const projectDir = (req.app.locals.sfProjectDir as string) || process.cwd();
+    const { ref, files } = lastSessionSnapshot;
+
+    const results = restoreFiles(projectDir, files, ref);
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    // Clear the snapshot after undo (can only undo once)
+    lastSessionSnapshot = null;
+
+    res.json({
+      restored: successes.map((r) => r.filepath),
+      failed: failures.map((r) => ({ filepath: r.filepath, error: r.error })),
     });
   });
 
