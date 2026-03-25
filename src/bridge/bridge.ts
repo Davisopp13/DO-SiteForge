@@ -519,6 +519,34 @@
         sendToEditor({ type: 'forge:pageSummary', entries });
         break;
       }
+
+      case 'forge:getSelectionInfo': {
+        const selEl = getElementByXPath(data.xpath);
+        if (selEl) {
+          const parent = selEl.parentElement;
+          const computed = window.getComputedStyle(selEl);
+          sendToEditor({
+            type: 'forge:selectionInfo',
+            parentTag: parent ? parent.tagName.toLowerCase() : '',
+            parentClass: parent ? (typeof parent.className === 'string' ? parent.className : '') : '',
+            siblingCount: parent ? parent.children.length - 1 : 0,
+            childCount: selEl.children.length,
+            flexDirection: computed.flexDirection,
+            flexWrap: computed.flexWrap,
+            alignItems: computed.alignItems,
+            justifyContent: computed.justifyContent,
+          });
+        } else {
+          sendToEditor({
+            type: 'forge:selectionInfo',
+            parentTag: '',
+            parentClass: '',
+            siblingCount: 0,
+            childCount: 0,
+          });
+        }
+        break;
+      }
     }
   }
 

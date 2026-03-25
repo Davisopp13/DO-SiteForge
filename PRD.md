@@ -96,7 +96,7 @@ src/
   - Bridge handler walks the top-level children of `<body>`, returns array of `{ tag, className, id, role, textPreview, childCount, boundingRect }`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 6: Selected element context**
+- [x] **Task 6: Selected element context**
   - Extend `src/editor/context.ts` with `getSelectionContext()` function
   - When an element is selected, builds a context object: element tag, classes, id, xpath, text content (truncated to 200 chars), computed styles (font-size, color, background, padding, margin, border-radius, display, flex properties), parent element info (tag, class), sibling count, child count
   - When no element is selected, returns null

@@ -451,3 +451,19 @@
   - `guessRole()` is intentionally simple/heuristic — good enough for AI context without parsing ARIA roles
   - `getPageContext()` will be extended in Task 6 with selection context
 ---
+
+## Iteration 29 - Task 6: Selected element context
+- Extended `src/editor/context.ts` with `getSelectionContext()` and `getCanvasContext()` functions
+- `getSelectionContext()` combines overlay's `ElementInfo` with bridge-queried parent/sibling/child info
+- `getCanvasContext()` runs page + selection queries in parallel, returns combined `CanvasContext`
+- Added `GetSelectionInfoMessage` to protocol.ts (editor→bridge) and `SelectionInfoResponse` (bridge→editor)
+- Bridge handler returns: parentTag, parentClass, siblingCount, childCount, and flex properties (flexDirection, flexWrap, alignItems, justifyContent)
+- `SelectionContext` includes computed styles filtered to relevant properties, with flex props only when display is flex/inline-flex
+- `CanvasContext` shape: `{ page: PageSummary, selection: SelectionContext | null, viewport: { width, mode }, projectType }`
+- Files changed: src/editor/context.ts, src/bridge/protocol.ts, src/bridge/bridge.ts, PRD.md
+- Learnings for future iterations:
+  - `ElementInfo` already has most selection data (tag, class, id, xpath, text, styles) — bridge only needs to provide parent/sibling/child info
+  - Flex properties conditionally included based on display value to keep context compact
+  - `getCanvasContext()` runs page + selection queries in parallel via Promise.all for speed
+  - Bridge `getSelectionInfo` reuses existing `getElementByXPath()` — no new DOM traversal logic needed
+---

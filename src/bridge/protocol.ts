@@ -115,6 +115,11 @@ export interface GetPageSummaryMessage {
   type: 'forge:getPageSummary';
 }
 
+export interface GetSelectionInfoMessage {
+  type: 'forge:getSelectionInfo';
+  xpath: string;
+}
+
 export type EditorToBridgeMessage =
   | GetElementAtPointMessage
   | GetElementByXPathMessage
@@ -130,7 +135,8 @@ export type EditorToBridgeMessage =
   | InsertElementMessage
   | RemoveElementMessage
   | ReinsertElementMessage
-  | GetPageSummaryMessage;
+  | GetPageSummaryMessage
+  | GetSelectionInfoMessage;
 
 // Messages from bridge -> editor
 export interface HoverMessage {
@@ -208,6 +214,18 @@ export interface PageSummaryResponse {
   entries: PageSummaryEntry[];
 }
 
+export interface SelectionInfoResponse {
+  type: 'forge:selectionInfo';
+  parentTag: string;
+  parentClass: string;
+  siblingCount: number;
+  childCount: number;
+  flexDirection?: string;
+  flexWrap?: string;
+  alignItems?: string;
+  justifyContent?: string;
+}
+
 export type BridgeToEditorMessage =
   | HoverMessage
   | SelectMessage
@@ -219,4 +237,5 @@ export type BridgeToEditorMessage =
   | NudgeCompleteMessage
   | ElementInsertedMessage
   | ElementRemovedMessage
-  | PageSummaryResponse;
+  | PageSummaryResponse
+  | SelectionInfoResponse;
