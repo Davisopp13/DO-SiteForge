@@ -4,7 +4,7 @@ import type { ElementInfo } from '../bridge/protocol.js';
 import { createProperties, type PropertiesManager } from './properties.js';
 import { renderMarkdown } from './markdown.js';
 import type { CanvasContext } from './context.js';
-import { parseFileChanges, resolveFileChanges, renderFileChanges, applyFileChangesAuto } from './filechanges.js';
+import { parseFileChanges, resolveFileChanges, renderFileChanges, applyFileChangesAuto, renderDirectWriteChanges, type WatchedFileChange } from './filechanges.js';
 
 export type SidebarTab = 'chat' | 'properties';
 
@@ -319,6 +319,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       let fullContent = '';
       let renderTimer: ReturnType<typeof setTimeout> | null = null;
       let needsRender = false;
+      let directWriteChanges: WatchedFileChange[] = [];
 
       function scheduleRender(): void {
         if (renderTimer) return;
@@ -384,6 +385,15 @@ export function createSidebar(container: HTMLElement): SidebarManager {
               } catch {
                 // Skip malformed delta
               }
+            } else if (eventType === 'files' && eventData) {
+              try {
+                const parsed = JSON.parse(eventData) as { changes?: WatchedFileChange[] };
+                if (parsed.changes && Array.isArray(parsed.changes)) {
+                  directWriteChanges.push(...parsed.changes);
+                }
+              } catch {
+                // Skip malformed files event
+              }
             } else if (eventType === 'done') {
               // Stream complete
               break;
@@ -406,7 +416,15 @@ export function createSidebar(container: HTMLElement): SidebarManager {
 
       // Final render with complete content
       flushRender();
-      finalizeAssistantMessage(assistantEl);
+      await finalizeAssistantMessage(assistantEl);
+
+      // Render direct write file changes (from Claude Code watcher)
+      if (directWriteChanges.length > 0) {
+        const directWritesEl = renderDirectWriteChanges(directWriteChanges);
+        assistantEl.appendChild(directWritesEl);
+        scrollToBottom();
+      }
+
       setInputDisabled(false);
     } catch (err) {
       hideLoading();

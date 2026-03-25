@@ -788,6 +788,42 @@ html, body {
   color: var(--sf-accent);
 }
 
+.sf-file-badge-deleted {
+  background: rgba(229, 62, 62, 0.15);
+  color: var(--sf-danger);
+}
+
+.sf-file-changes-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+}
+
+.sf-file-card-view {
+  border: 1px solid var(--sf-border);
+  background: transparent;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sf-file-card-view:hover {
+  color: var(--sf-accent);
+  border-color: var(--sf-accent);
+}
+
+.sf-file-card-view:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .sf-file-card-toggle {
   border: none;
   background: transparent;

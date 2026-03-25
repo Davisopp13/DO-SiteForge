@@ -96,7 +96,7 @@ src/
   - Files to modify: `src/server/ai.ts` (start/stop watcher around Claude Code sessions)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 6: Report file changes in chat after Claude Code response**
+- [x] **Task 6: Report file changes in chat after Claude Code response**
   - When using Claude Code provider and a response completes, query the watcher for file changes that occurred during the session
   - Send file changes to the frontend as `file_changed` events via SSE after the `done` event: `event: files\ndata: {"changes": [{"filepath": "src/components/Footer.tsx", "type": "created"}, ...]}\n\n`
   - The chat sidebar receives these events and displays them as a file change summary below the AI message — same visual treatment as the Phase 2 file change cards, but labeled "Files written by Claude Code" instead of showing an "Apply changes" button

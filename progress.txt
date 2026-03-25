@@ -769,3 +769,20 @@
   - `ignoreInitial: true` avoids emitting events for existing files on start
   - Watcher lifecycle tied to chat sessions — start on request, stop after response/error
 ---
+
+## Iteration 48 - Task 6 (Phase 2.5B): Report file changes in chat after Claude Code response
+- Added `WatchedFileChange` interface and `renderDirectWriteChanges()` function to filechanges.ts
+- Direct write cards show: filename, created/modified/deleted badge, "View" button that fetches content via `/api/files/read`
+- View button toggles between showing/hiding file content in expandable code block
+- Label "Files written by Claude Code" distinguishes from API-path file changes
+- Updated sidebar.ts SSE parser to handle `files` event type, collecting `WatchedFileChange[]` during streaming
+- Direct write changes rendered after `finalizeAssistantMessage()` completes
+- Added CSS: `.sf-file-badge-deleted` (red), `.sf-file-changes-label` (uppercase header), `.sf-file-card-view` (bordered pill button with hover accent)
+- Server-side already emits `files` SSE events from chat.ts (done in Task 5)
+- Files changed: src/editor/filechanges.ts, src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `renderDirectWriteChanges` is separate from `renderFileChanges` — different UX (no Apply button, View button instead)
+  - `WatchedFileChange` type matches watcher.ts `FileChange` shape (filepath, type, timestamp)
+  - View button fetches content lazily on click — avoids loading all file contents upfront
+  - Direct write changes appended after finalizeAssistantMessage to appear below suggestion chips
+---

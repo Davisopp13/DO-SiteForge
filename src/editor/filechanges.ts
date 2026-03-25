@@ -202,6 +202,106 @@ export async function applyFileChangesAuto(
 }
 
 /**
+ * File change from the watcher (Claude Code direct writes).
+ * Different from FileChange — these are already written to disk.
+ */
+export interface WatchedFileChange {
+  filepath: string;
+  type: 'created' | 'modified' | 'deleted';
+  timestamp: number;
+}
+
+/**
+ * Render file change cards for files written directly by Claude Code.
+ * Shows filename, created/modified/deleted badge, and a "View" button
+ * that fetches and displays file content in an expandable code block.
+ * No "Apply changes" button since files are already written.
+ */
+export function renderDirectWriteChanges(changes: WatchedFileChange[]): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'sf-file-changes sf-file-changes-direct';
+
+  // Label
+  const label = document.createElement('div');
+  label.className = 'sf-file-changes-label';
+  label.textContent = 'Files written by Claude Code';
+  container.appendChild(label);
+
+  for (const change of changes) {
+    const card = document.createElement('div');
+    card.className = 'sf-file-card';
+
+    // Header with filename and badge
+    const header = document.createElement('div');
+    header.className = 'sf-file-card-header';
+
+    const filename = document.createElement('span');
+    filename.className = 'sf-file-card-name';
+    filename.textContent = change.filepath;
+
+    const badgeClass =
+      change.type === 'created' ? 'sf-file-badge-new' :
+      change.type === 'deleted' ? 'sf-file-badge-deleted' :
+      'sf-file-badge-modified';
+    const badge = document.createElement('span');
+    badge.className = `sf-file-badge ${badgeClass}`;
+    badge.textContent = change.type === 'created' ? 'new file' : change.type;
+
+    header.appendChild(filename);
+    header.appendChild(badge);
+
+    // View button (fetches content on click)
+    if (change.type !== 'deleted') {
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'sf-file-card-view';
+      viewBtn.textContent = 'View';
+      viewBtn.title = 'View file content';
+
+      const preview = document.createElement('div');
+      preview.className = 'sf-file-card-preview';
+      preview.style.display = 'none';
+
+      viewBtn.addEventListener('click', async () => {
+        if (preview.style.display !== 'none') {
+          // Collapse
+          preview.style.display = 'none';
+          viewBtn.textContent = 'View';
+          return;
+        }
+
+        // Fetch and show content
+        viewBtn.textContent = 'Loading...';
+        viewBtn.disabled = true;
+        try {
+          const res = await fetch(`/api/files/read?path=${encodeURIComponent(change.filepath)}`);
+          if (res.ok) {
+            const data = await res.json() as { content: string };
+            preview.innerHTML = `<pre><code>${escapeHtml(data.content)}</code></pre>`;
+          } else {
+            preview.innerHTML = `<pre><code>Error: Could not read file</code></pre>`;
+          }
+        } catch {
+          preview.innerHTML = `<pre><code>Error: Could not read file</code></pre>`;
+        }
+        viewBtn.disabled = false;
+        viewBtn.textContent = 'Hide';
+        preview.style.display = '';
+      });
+
+      header.appendChild(viewBtn);
+      card.appendChild(header);
+      card.appendChild(preview);
+    } else {
+      card.appendChild(header);
+    }
+
+    container.appendChild(card);
+  }
+
+  return container;
+}
+
+/**
  * Apply file changes by POSTing each to /api/files/write.
  */
 async function applyFileChanges(
