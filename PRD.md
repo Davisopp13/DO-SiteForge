@@ -61,7 +61,7 @@ src/
   - Files to modify: `src/server/ai.ts` (refactor to use provider interface)
   - Test: `npx tsc --noEmit` passes. Existing API key flow still works unchanged.
 
-- [ ] **Task 3: Claude Code CLI provider**
+- [x] **Task 3: Claude Code CLI provider**
   - Create `src/server/providers/claude-code.ts` implementing `AIProvider`
   - `name: 'claude-code'`, `available` based on detection, `supportsDirectFileWrites: true`
   - `streamChat()` implementation:

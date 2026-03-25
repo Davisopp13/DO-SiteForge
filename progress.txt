@@ -720,3 +720,21 @@
   - ai.ts kept as-is for backward compat — chat.ts still imports directly from it until Task 4 rewires
   - Provider takes full SiteForgeConfig in constructor rather than individual fields for flexibility
 ---
+
+## Iteration 45 - Task 3 (Phase 2.5A): Claude Code CLI provider
+- Created `src/server/providers/claude-code.ts` implementing `AIProvider`
+- `createClaudeCodeProvider()` returns provider with `name: 'claude-code'`, `available` via isClaudeCodeAvailable(), `supportsDirectFileWrites: true`
+- `streamChat()` spawns `claude --print --output-format stream-json` with cwd set to projectRoot
+- Prompt assembled via `assemblePrompt()`: instruction prefix + system context + conversation history + user message
+- Parses newline-delimited JSON from stdout, maps to ChatEvent via `mapClaudeCodeEvent()`
+- Handles: assistant events (full text), content_block_delta (streaming text), content_block_start, error events
+- 30s timeout with SIGTERM, stderr collection for error reporting, proper cleanup
+- `waitForExit()` helper returns exit code promise
+- Files created: src/server/providers/claude-code.ts
+- Learnings for future iterations:
+  - Claude Code `--output-format stream-json` outputs newline-delimited JSON, not SSE
+  - Event types vary: `assistant` has full message, `content_block_delta` has streaming text
+  - Prompt piped to stdin, stdin closed after write to signal end of input
+  - spawn() with `stdio: ['pipe', 'pipe', 'pipe']` gives full control over all streams
+  - `for await (const chunk of child.stdout)` is the cleanest way to read stdout as async iterable
+---
