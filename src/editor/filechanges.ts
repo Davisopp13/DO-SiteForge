@@ -171,6 +171,37 @@ export function renderFileChanges(changes: FileChange[]): HTMLElement {
 }
 
 /**
+ * Apply file changes silently (for auto-apply mode).
+ * Returns success count and errors without manipulating DOM.
+ */
+export async function applyFileChangesAuto(
+  changes: FileChange[],
+): Promise<{ successCount: number; errors: string[] }> {
+  let successCount = 0;
+  const errors: string[] = [];
+
+  for (const change of changes) {
+    try {
+      const res = await fetch('/api/files/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filepath: change.filepath, content: change.content }),
+      });
+      if (res.ok) {
+        successCount++;
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Write failed' }));
+        errors.push(`${change.filepath}: ${data.error || 'Write failed'}`);
+      }
+    } catch {
+      errors.push(`${change.filepath}: Network error`);
+    }
+  }
+
+  return { successCount, errors };
+}
+
+/**
  * Apply file changes by POSTing each to /api/files/write.
  */
 async function applyFileChanges(

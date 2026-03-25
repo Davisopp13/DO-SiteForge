@@ -613,3 +613,20 @@
   - Apply button disabled during apply to prevent double-clicks
   - CSS uses existing design tokens (--sf-green, --sf-danger, --sf-accent) for consistent styling
 ---
+
+## Iteration 38 - Task 16: Auto-apply toggle
+- Added auto-apply toggle switch in the chat input area (above textarea row)
+- Toggle is off by default, stored in memory (resets each session)
+- When enabled: file changes from AI responses are written immediately via `applyFileChangesAuto()`
+- Toast notification shows "Applied X files" that fades in/out at bottom center of screen
+- If auto-apply fails, falls back to showing file change cards with manual Apply button
+- Added `applyFileChangesAuto()` export to filechanges.ts — headless version of applyFileChanges that returns results without DOM manipulation
+- Restructured chat input area: `.sf-chat-input-area` is now flex-column containing `.sf-auto-apply-row` + `.sf-chat-input-row`
+- CSS: toggle switch (32x18px, green when active, white thumb slides right), toast (fixed bottom center, opacity transition), input row layout
+- Files changed: src/editor/sidebar.ts, src/editor/filechanges.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - Toast uses `requestAnimationFrame` after append to trigger CSS transition (class added after element is in DOM)
+  - Auto-apply toggle uses `role="switch"` and `aria-checked` for accessibility
+  - Input area DOM restructure: auto-apply row + input row (textarea + send btn) inside flex-column container
+  - `applyFileChangesAuto` is a separate export from `applyFileChanges` — the latter manipulates a specific button DOM element
+---

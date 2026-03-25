@@ -203,7 +203,7 @@ src/
   - Files to modify: `src/editor/sidebar.ts`, `src/editor/filechanges.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 16: Auto-apply toggle**
+- [x] **Task 16: Auto-apply toggle**
   - Add a small toggle in the chat input area: "Auto-apply" with a switch
   - When enabled: file changes from AI responses are written immediately without requiring the "Apply changes" button click
   - When disabled (default): user must click "Apply changes" to write files

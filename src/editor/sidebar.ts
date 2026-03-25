@@ -4,7 +4,7 @@ import type { ElementInfo } from '../bridge/protocol.js';
 import { createProperties, type PropertiesManager } from './properties.js';
 import { renderMarkdown } from './markdown.js';
 import type { CanvasContext } from './context.js';
-import { parseFileChanges, resolveFileChanges, renderFileChanges } from './filechanges.js';
+import { parseFileChanges, resolveFileChanges, renderFileChanges, applyFileChangesAuto } from './filechanges.js';
 
 export type SidebarTab = 'chat' | 'properties';
 
@@ -38,6 +38,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   let activeTab: SidebarTab = 'chat';
   let selectedElement: ElementInfo | null = null;
   let isLoading = false;
+  let autoApply = false;
   const messages: ChatMessage[] = [];
 
   // Create tab bar
@@ -94,6 +95,28 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   const chatInputArea = document.createElement('div');
   chatInputArea.className = 'sf-chat-input-area';
 
+  // Auto-apply toggle row
+  const autoApplyRow = document.createElement('div');
+  autoApplyRow.className = 'sf-auto-apply-row';
+
+  const autoApplyLabel = document.createElement('label');
+  autoApplyLabel.className = 'sf-auto-apply-label';
+  autoApplyLabel.textContent = 'Auto-apply';
+
+  const autoApplySwitch = document.createElement('button');
+  autoApplySwitch.className = 'sf-auto-apply-switch';
+  autoApplySwitch.setAttribute('role', 'switch');
+  autoApplySwitch.setAttribute('aria-checked', 'false');
+  autoApplySwitch.innerHTML = `<span class="sf-auto-apply-thumb"></span>`;
+  autoApplySwitch.addEventListener('click', () => {
+    autoApply = !autoApply;
+    autoApplySwitch.classList.toggle('active', autoApply);
+    autoApplySwitch.setAttribute('aria-checked', String(autoApply));
+  });
+
+  autoApplyRow.appendChild(autoApplyLabel);
+  autoApplyRow.appendChild(autoApplySwitch);
+
   const chatTextarea = document.createElement('textarea');
   chatTextarea.className = 'sf-chat-textarea';
   chatTextarea.placeholder = 'Describe a change...';
@@ -104,8 +127,14 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   sendBtn.title = 'Send message';
   sendBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
 
-  chatInputArea.appendChild(chatTextarea);
-  chatInputArea.appendChild(sendBtn);
+  // Input row (textarea + send button)
+  const chatInputRow = document.createElement('div');
+  chatInputRow.className = 'sf-chat-input-row';
+  chatInputRow.appendChild(chatTextarea);
+  chatInputRow.appendChild(sendBtn);
+
+  chatInputArea.appendChild(autoApplyRow);
+  chatInputArea.appendChild(chatInputRow);
 
   chatContent.appendChild(chatMessagesEl);
   chatContent.appendChild(chatInputArea);
@@ -433,6 +462,19 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     scrollToBottom();
   }
 
+  function showToast(text: string): void {
+    const toast = document.createElement('div');
+    toast.className = 'sf-toast';
+    toast.textContent = text;
+    document.body.appendChild(toast);
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add('sf-toast-visible'));
+    setTimeout(() => {
+      toast.classList.remove('sf-toast-visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+
   async function finalizeAssistantMessage(el: HTMLElement): Promise<void> {
     el.classList.add('sf-chat-msg-complete');
 
@@ -443,8 +485,22 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       if (changes.length > 0) {
         // Resolve isNew flags via API
         const resolved = await resolveFileChanges(changes);
-        const fileChangesEl = renderFileChanges(resolved);
-        el.appendChild(fileChangesEl);
+
+        if (autoApply) {
+          // Auto-apply: write files immediately, show toast
+          const result = await applyFileChangesAuto(resolved);
+          if (result.successCount > 0) {
+            showToast(`Applied ${result.successCount} file${result.successCount !== 1 ? 's' : ''}`);
+          }
+          if (result.errors.length > 0) {
+            // Show file cards with error state for failed files
+            const fileChangesEl = renderFileChanges(resolved);
+            el.appendChild(fileChangesEl);
+          }
+        } else {
+          const fileChangesEl = renderFileChanges(resolved);
+          el.appendChild(fileChangesEl);
+        }
       }
     }
 
