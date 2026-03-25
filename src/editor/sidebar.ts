@@ -3,6 +3,7 @@
 import type { ElementInfo } from '../bridge/protocol.js';
 import { createProperties, type PropertiesManager } from './properties.js';
 import { renderMarkdown } from './markdown.js';
+import type { CanvasContext } from './context.js';
 
 export type SidebarTab = 'chat' | 'properties';
 
@@ -24,6 +25,11 @@ export interface SidebarManager {
   messages: ChatMessage[];
   chatMessagesEl: HTMLElement;
   isLoading: boolean;
+  sendMessage(text: string): void;
+  focusInput(): void;
+  clearChat(): void;
+  setContextProvider(provider: () => Promise<CanvasContext>): void;
+  inputEl: HTMLTextAreaElement;
 }
 
 
@@ -83,7 +89,162 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   loadingEl.style.display = 'none';
   loadingEl.innerHTML = `<span class="sf-chat-dot"></span><span class="sf-chat-dot"></span><span class="sf-chat-dot"></span>`;
 
+  // Chat input area
+  const chatInputArea = document.createElement('div');
+  chatInputArea.className = 'sf-chat-input-area';
+
+  const chatTextarea = document.createElement('textarea');
+  chatTextarea.className = 'sf-chat-textarea';
+  chatTextarea.placeholder = 'Describe a change...';
+  chatTextarea.rows = 1;
+
+  const sendBtn = document.createElement('button');
+  sendBtn.className = 'sf-chat-send-btn';
+  sendBtn.title = 'Send message';
+  sendBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+
+  chatInputArea.appendChild(chatTextarea);
+  chatInputArea.appendChild(sendBtn);
+
   chatContent.appendChild(chatMessagesEl);
+  chatContent.appendChild(chatInputArea);
+
+  // Auto-grow textarea up to 4 lines
+  function autoGrowTextarea(): void {
+    chatTextarea.style.height = 'auto';
+    const lineHeight = 18;
+    const maxHeight = lineHeight * 4 + 16; // 4 lines + padding
+    chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, maxHeight) + 'px';
+  }
+
+  chatTextarea.addEventListener('input', autoGrowTextarea);
+
+  // Context provider for getting canvas context
+  let contextProvider: (() => Promise<CanvasContext>) | null = null;
+
+  function setContextProvider(provider: () => Promise<CanvasContext>): void {
+    contextProvider = provider;
+  }
+
+  // Update placeholder based on context
+  function updatePlaceholder(): void {
+    if (isLoading) {
+      chatTextarea.placeholder = 'Waiting for response...';
+    } else if (selectedElement) {
+      const tag = `<${selectedElement.tagName}>`;
+      chatTextarea.placeholder = `Describe a change to ${tag}...`;
+    } else {
+      chatTextarea.placeholder = 'Describe a change...';
+    }
+  }
+
+  // Set input disabled state during loading
+  function setInputDisabled(disabled: boolean): void {
+    chatTextarea.disabled = disabled;
+    sendBtn.disabled = disabled;
+    sendBtn.classList.toggle('disabled', disabled);
+    updatePlaceholder();
+  }
+
+  // Send message
+  async function sendMessage(text: string): Promise<void> {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
+
+    // Add user message immediately (optimistic UI)
+    addMessage('user', trimmed);
+
+    // Clear textarea
+    chatTextarea.value = '';
+    autoGrowTextarea();
+
+    // Disable input while waiting
+    setInputDisabled(true);
+    showLoading();
+
+    // Collect context
+    let context: CanvasContext | null = null;
+    if (contextProvider) {
+      try {
+        context = await contextProvider();
+      } catch {
+        // Context collection failed — send without context
+      }
+    }
+
+    // Build history for API (exclude the message we just added — it's sent as `message`)
+    const historyForApi = messages.slice(0, -1).map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed,
+          context: context || {},
+          history: historyForApi,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Request failed' }));
+        hideLoading();
+        setInputDisabled(false);
+        addMessage('assistant', `Error: ${errData.error || res.statusText}`);
+        return;
+      }
+
+      // Dispatch event for SSE stream handling (Task 12 will implement the stream reader)
+      window.dispatchEvent(new CustomEvent('forge:chatResponse', {
+        detail: { response: res },
+      }));
+
+      // For now, if no SSE handler picks it up, read as text fallback
+      hideLoading();
+      setInputDisabled(false);
+    } catch (err) {
+      hideLoading();
+      setInputDisabled(false);
+      addMessage('assistant', 'Connection error — check that the server is running and try again.');
+    }
+  }
+
+  // Enter to send, Shift+Enter for newline
+  chatTextarea.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(chatTextarea.value);
+    }
+  });
+
+  // Send button click
+  sendBtn.addEventListener('click', () => {
+    sendMessage(chatTextarea.value);
+  });
+
+  // Focus input
+  function focusInput(): void {
+    chatTextarea.focus();
+  }
+
+  // Clear chat
+  function clearChat(): void {
+    messages.length = 0;
+    chatMessagesEl.innerHTML = '';
+    // Restore empty state
+    const newEmptyState = document.createElement('div');
+    newEmptyState.className = 'sf-chat-placeholder';
+    newEmptyState.innerHTML = `
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>Describe a change to your site</span>
+    `;
+    chatMessagesEl.appendChild(newEmptyState);
+  }
 
   const propsContent = document.createElement('div');
   propsContent.className = 'sf-sidebar-content sf-props-content';
@@ -180,6 +341,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     loadingEl.style.display = '';
     chatMessagesEl.appendChild(loadingEl);
     scrollToBottom();
+    setInputDisabled(true);
   }
 
   function hideLoading(): void {
@@ -188,6 +350,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     if (loadingEl.parentElement) {
       loadingEl.remove();
     }
+    setInputDisabled(false);
   }
 
   function switchTab(tab: SidebarTab): void {
@@ -216,6 +379,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       switchTab('properties');
     }
     updateContextIndicator();
+    updatePlaceholder();
   }) as EventListener);
 
   // Initialize with chat tab active
@@ -237,6 +401,11 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     get isLoading() {
       return isLoading;
     },
+    sendMessage,
+    focusInput,
+    clearChat,
+    setContextProvider,
+    inputEl: chatTextarea,
   };
 
   return manager;

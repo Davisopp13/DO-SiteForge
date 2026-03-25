@@ -149,7 +149,7 @@ src/
   - Files to create: `src/editor/markdown.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 11: Chat input and send**
+- [x] **Task 11: Chat input and send**
   - Add input area at the bottom of the chat panel
   - Textarea (not input) that auto-grows up to 4 lines, then scrolls internally
   - Send button to the right of the textarea (green arrow icon, uses --sf-green)

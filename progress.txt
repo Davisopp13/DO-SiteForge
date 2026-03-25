@@ -536,3 +536,21 @@
   - Paragraph collector must check for all block-level markers to avoid swallowing headings/lists
   - Sanitize runs last on the final HTML to catch any injections from the markdown content
 ---
+
+## Iteration 34 - Task 11: Chat input and send
+- Added chat input area at bottom of chat panel: auto-growing textarea (up to 4 lines) + green send button
+- Enter to send, Shift+Enter for newline
+- Input/button disabled while AI is responding, textarea placeholder changes to "Waiting for response..."
+- On send: collects message text, gets canvas context via contextProvider callback, POSTs to /api/chat
+- Optimistic UI: user message appears immediately, textarea clears
+- Context-aware placeholder: shows selected element tag when an element is selected
+- Added `sendMessage()`, `focusInput()`, `clearChat()`, `setContextProvider()` to SidebarManager
+- Dispatches `forge:chatResponse` event with fetch Response for Task 12 (SSE stream handling)
+- CSS: input area with border-top separator, textarea with focus ring, green send button (--sf-green), disabled states
+- Files changed: src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `setContextProvider()` decouples sidebar from canvas/overlay — app.ts will wire it with getCanvasContext
+  - Auto-grow uses `style.height = 'auto'` then reads scrollHeight — must reset first to shrink correctly
+  - `sendMessage` is async but doesn't await SSE streaming — that's Task 12's job
+  - History for API excludes the just-added user message since it's sent as the `message` field
+---
