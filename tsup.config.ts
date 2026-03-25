@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig([
   {
-    entry: ['bin/forge.ts'],
+    entry: ['bin/forge.ts', 'src/server/index.ts'],
     format: ['esm'],
     outDir: 'dist',
     banner: {

@@ -94,7 +94,7 @@ siteforge/
 
 ### Phase 1B: Server & Iframe Rendering
 
-- [ ] **Task 4: Express server with editor shell**
+- [x] **Task 4: Express server with editor shell**
   - Create `src/server/index.ts` — Express server on port 3000
   - Serve `src/editor/index.html` as the root route
   - Create `src/editor/index.html` — minimal HTML shell with: a left toolbar div, a center canvas area div, a right properties panel div, and a script tag loading the bundled editor JS

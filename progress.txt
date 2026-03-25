@@ -36,3 +36,20 @@
   - Static projects have empty devCommand — server will handle them with Express static serving
   - Detection checks both `dependencies` and `devDependencies` (merged into one object)
 ---
+
+## Iteration 4 - Task 4: Express server with editor shell
+- Created Express server in `src/server/index.ts` with `createServer(port)` export
+- Server serves editor HTML at `/`, static CSS at `/editor/styles.css`, bundled JS at `/editor/app.js`
+- Created three-panel layout in `src/editor/index.html`: toolbar (44px left), canvas (center flex), properties (240px right)
+- Created `src/editor/styles.css` with CSS custom properties for full light/dark theming via prefers-color-scheme
+- Created `src/editor/app.ts` with basic initialization and properties placeholder
+- Added `src/server/index.ts` as second entry in tsup node config
+- Updated tsup.config.ts to build both CLI and server entry points
+- Files changed: src/server/index.ts, src/editor/index.html, src/editor/styles.css, src/editor/app.ts, tsup.config.ts, PRD.md
+- Learnings for future iterations:
+  - tsup preserves directory structure in output: `src/server/index.ts` → `dist/src/server/index.js`
+  - Use `findProjectRoot()` helper to resolve paths from dist back to project root
+  - Editor static files served from `src/editor/` (source), bundled JS from `dist/editor/`
+  - Shebang in banner applies to ALL entries in a tsup config block — harmless on non-CLI files
+  - macOS has no `timeout` command — use Node.js inline scripts for testing servers
+---

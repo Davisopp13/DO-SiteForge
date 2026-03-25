@@ -1,1 +1,138 @@
-/* Editor styles — placeholder */
+/* SiteForge Editor — CSS Custom Properties & Layout */
+
+:root {
+  /* Core palette — light mode */
+  --sf-bg-primary: #ffffff;
+  --sf-bg-secondary: #f5f5f5;
+  --sf-bg-tertiary: #e8e8e8;
+  --sf-border: #d4d4d4;
+  --sf-text-primary: #1a1a1a;
+  --sf-text-secondary: #6b6b6b;
+  --sf-accent: #378ADD;
+  --sf-green: #3A7D44;
+  --sf-danger: #e53e3e;
+  --sf-surface: #ffffff;
+  --sf-overlay: rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sf-bg-primary: #1a1a1a;
+    --sf-bg-secondary: #242424;
+    --sf-bg-tertiary: #2e2e2e;
+    --sf-border: #3a3a3a;
+    --sf-text-primary: #e8e8e8;
+    --sf-text-secondary: #9a9a9a;
+    --sf-accent: #378ADD;
+    --sf-green: #3A7D44;
+    --sf-danger: #fc5c65;
+    --sf-surface: #212121;
+    --sf-overlay: rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* Reset */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  color: var(--sf-text-primary);
+  background: var(--sf-bg-primary);
+}
+
+/* Three-panel grid layout */
+#sf-app {
+  display: grid;
+  grid-template-columns: 44px 1fr 240px;
+  grid-template-rows: 1fr;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Left toolbar */
+#sf-toolbar {
+  background: var(--sf-bg-secondary);
+  border-right: 1px solid var(--sf-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 8px;
+  gap: 4px;
+}
+
+/* Center canvas */
+#sf-canvas {
+  background: var(--sf-bg-tertiary);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Right properties panel */
+#sf-properties {
+  background: var(--sf-bg-secondary);
+  border-left: 1px solid var(--sf-border);
+  padding: 12px;
+  overflow-y: auto;
+}
+
+/* Panel shared styles */
+.sf-panel {
+  user-select: none;
+}
+
+/* Properties panel placeholder */
+.sf-properties-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--sf-text-secondary);
+  font-size: 12px;
+  text-align: center;
+  padding: 16px;
+}
+
+/* Toolbar button */
+.sf-tool-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sf-text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.sf-tool-btn:hover {
+  background: var(--sf-overlay);
+  color: var(--sf-text-primary);
+}
+
+.sf-tool-btn.active {
+  background: rgba(55, 138, 221, 0.15);
+  color: var(--sf-accent);
+}
+
+.sf-tool-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Toolbar separator */
+.sf-toolbar-sep {
+  width: 24px;
+  height: 1px;
+  background: var(--sf-border);
+  margin: 4px 0;
+}
