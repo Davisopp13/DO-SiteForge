@@ -65,14 +65,6 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
   // Set initial active state
   updateActiveButton();
 
-  // Mode badge at top of canvas area
-  const modeBadge = createModeBadge();
-  // Insert mode badge into the canvas area (parent's next sibling, the canvas div)
-  const canvasEl = document.getElementById('sf-canvas');
-  if (canvasEl) {
-    canvasEl.appendChild(modeBadge);
-  }
-
   function setTool(tool: ToolType) {
     if (tool === activeTool) return;
     activeTool = tool;
@@ -92,28 +84,22 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
   }
 
   function updateModeBadge() {
-    modeBadge.textContent = `${TOOL_LABELS[activeTool]} mode`;
-    if (activeTool === 'preview') {
-      modeBadge.style.background = 'rgba(58, 125, 68, 0.1)';
-      modeBadge.style.color = '#3A7D44';
-      modeBadge.style.borderColor = 'rgba(58, 125, 68, 0.3)';
-    } else {
-      modeBadge.style.background = 'var(--sf-bg-secondary)';
-      modeBadge.style.color = 'var(--sf-text-secondary)';
-      modeBadge.style.borderColor = 'var(--sf-border)';
-    }
+    window.dispatchEvent(new CustomEvent('forge:modeBadgeUpdate', {
+      detail: {
+        text: `${TOOL_LABELS[activeTool]} mode`,
+        style: activeTool === 'preview' ? 'preview' : 'default',
+      },
+    }));
   }
 
   // Listen for text edit mode changes to update badge
   window.addEventListener('forge:textEditModeChanged', ((e: CustomEvent) => {
-    if (e.detail?.editing) {
-      modeBadge.textContent = 'Text edit mode';
-      modeBadge.style.background = 'var(--sf-bg-secondary)';
-      modeBadge.style.color = 'var(--sf-text-secondary)';
-      modeBadge.style.borderColor = 'var(--sf-border)';
-    } else {
-      updateModeBadge();
-    }
+    window.dispatchEvent(new CustomEvent('forge:modeBadgeUpdate', {
+      detail: {
+        text: e.detail?.editing ? 'Text edit mode' : `${TOOL_LABELS[activeTool]} mode`,
+        style: e.detail?.editing ? 'default' : (activeTool === 'preview' ? 'preview' : 'default'),
+      },
+    }));
   }) as EventListener);
 
   // Keyboard shortcuts are handled centrally by keyboard.ts
@@ -124,28 +110,4 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
   };
 
   return manager;
-}
-
-function createModeBadge(): HTMLDivElement {
-  const badge = document.createElement('div');
-  badge.id = 'sf-mode-badge';
-  badge.textContent = 'Select mode';
-  badge.style.cssText = `
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: var(--sf-bg-secondary);
-    color: var(--sf-text-secondary);
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    font-size: 11px;
-    line-height: 1;
-    padding: 5px 10px;
-    border-radius: 4px;
-    border: 1px solid var(--sf-border);
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 16;
-    user-select: none;
-  `;
-  return badge;
 }

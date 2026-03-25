@@ -237,6 +237,26 @@ html, body {
   height: 14px;
 }
 
+/* Mode badge — inline in viewport bar */
+.sf-mode-badge {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--sf-border);
+  background: var(--sf-bg-tertiary);
+  color: var(--sf-text-secondary);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sf-viewport-spacer {
+  flex: 1;
+}
+
 /* Viewport toggle bar */
 .sf-viewport-bar {
   display: flex;

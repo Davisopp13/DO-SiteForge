@@ -67,6 +67,33 @@ export function createViewport(canvasEl: HTMLElement): ViewportManager {
   bar.id = 'sf-viewport-bar';
   bar.className = 'sf-viewport-bar';
 
+  // Mode badge (left side of viewport bar)
+  const modeBadge = document.createElement('div');
+  modeBadge.id = 'sf-mode-badge';
+  modeBadge.className = 'sf-mode-badge';
+  modeBadge.textContent = 'Select mode';
+  bar.appendChild(modeBadge);
+
+  // Spacer pushes buttons to the right
+  const spacer = document.createElement('div');
+  spacer.className = 'sf-viewport-spacer';
+  bar.appendChild(spacer);
+
+  // Listen for mode badge updates from toolbar.ts
+  window.addEventListener('forge:modeBadgeUpdate', ((e: CustomEvent) => {
+    const { text, style } = e.detail || {};
+    if (text) modeBadge.textContent = text;
+    if (style === 'preview') {
+      modeBadge.style.background = 'rgba(58, 125, 68, 0.1)';
+      modeBadge.style.color = '#3A7D44';
+      modeBadge.style.borderColor = 'rgba(58, 125, 68, 0.3)';
+    } else {
+      modeBadge.style.background = '';
+      modeBadge.style.color = '';
+      modeBadge.style.borderColor = '';
+    }
+  }) as EventListener);
+
   // Buttons container
   const buttonsContainer = document.createElement('div');
   buttonsContainer.className = 'sf-viewport-buttons';
