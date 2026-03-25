@@ -81,6 +81,18 @@ export interface UndoRedoTextMessage {
   text: string;
 }
 
+export interface DeleteElementMessage {
+  type: 'forge:deleteElement';
+  xpath: string;
+}
+
+export interface NudgeElementMessage {
+  type: 'forge:nudgeElement';
+  xpath: string;
+  deltaX: number;
+  deltaY: number;
+}
+
 export type EditorToBridgeMessage =
   | GetElementAtPointMessage
   | GetElementByXPathMessage
@@ -90,7 +102,9 @@ export type EditorToBridgeMessage =
   | TextEditStartMessage
   | TextEditEndMessage
   | UndoRedoMoveMessage
-  | UndoRedoTextMessage;
+  | UndoRedoTextMessage
+  | DeleteElementMessage
+  | NudgeElementMessage;
 
 // Messages from bridge -> editor
 export interface HoverMessage {
@@ -127,10 +141,25 @@ export interface MoveCompleteMessage {
   finalRect: ElementRect;
 }
 
-export type BridgeToBridgeMessage =
+export interface ElementDeletedMessage {
+  type: 'forge:elementDeleted';
+  xpath: string;
+}
+
+export interface NudgeCompleteMessage {
+  type: 'forge:nudgeComplete';
+  xpath: string;
+  finalRect: ElementRect;
+  totalDeltaX: number;
+  totalDeltaY: number;
+}
+
+export type BridgeToEditorMessage =
   | HoverMessage
   | SelectMessage
   | ElementInfoResponse
   | EditableElementsResponse
   | TextEditCompleteMessage
-  | MoveCompleteMessage;
+  | MoveCompleteMessage
+  | ElementDeletedMessage
+  | NudgeCompleteMessage;

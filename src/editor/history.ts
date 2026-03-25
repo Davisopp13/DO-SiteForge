@@ -166,26 +166,7 @@ export function createHistory(canvas: CanvasManager): HistoryManager {
     toolbarEl.appendChild(redoBtn);
   }
 
-  // Keyboard shortcuts: Cmd+Z / Ctrl+Z for undo, Cmd+Shift+Z / Ctrl+Shift+Z for redo
-  window.addEventListener('keydown', (e: KeyboardEvent) => {
-    // Don't fire during text editing
-    const modeBadge = document.getElementById('sf-mode-badge');
-    if (modeBadge && modeBadge.textContent === 'Text edit mode') return;
-
-    // Don't fire if focus is in an input/textarea
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-
-    const isMeta = e.metaKey || e.ctrlKey;
-
-    if (isMeta && e.shiftKey && e.key.toLowerCase() === 'z') {
-      e.preventDefault();
-      redo();
-    } else if (isMeta && e.key.toLowerCase() === 'z') {
-      e.preventDefault();
-      undo();
-    }
-  });
+  // Keyboard shortcuts are handled centrally by keyboard.ts
 
   const manager: HistoryManager = {
     push,

@@ -5,6 +5,7 @@ import { createOverlay } from './overlay.js';
 import { createToolbar } from './toolbar.js';
 import { createProperties } from './properties.js';
 import { createHistory } from './history.js';
+import { createKeyboard } from './keyboard.js';
 
 function init() {
   const toolbarEl = document.getElementById('sf-toolbar');
@@ -30,6 +31,9 @@ function init() {
 
   // Initialize history (undo/redo)
   const history = createHistory(canvas);
+
+  // Initialize centralized keyboard shortcuts
+  const keyboard = createKeyboard({ toolbar, overlay, history, canvas });
 
   // Listen for move completions to record in history
   // Track pending drag state for history recording

@@ -190,3 +190,27 @@
   - Undo/redo keyboard shortcuts must check for text edit mode (same pattern as toolbar shortcuts)
   - Redo stack cleared on new operations to maintain correct undo/redo semantics
 ---
+
+## Iteration 13 - Task 13: Keyboard shortcuts handler
+- Created centralized `src/editor/keyboard.ts` with all keyboard shortcuts in one place
+- Tool switching: V=select, M=move, T=text, A=add
+- Viewport switching: 1=mobile, 2=tablet, 3=desktop, 4=custom (dispatches `forge:viewportShortcut` event for future Task 17)
+- Delete/Backspace: deletes selected element via bridge `forge:deleteElement` message
+- Escape: exits text edit mode or deselects current element
+- Cmd+Z / Cmd+Shift+Z: undo/redo (delegates to history manager)
+- Arrow keys: nudge selected element by 1px (10px with Shift) via bridge `forge:nudgeElement` message
+- All shortcuts (except Escape) blocked during text edit mode and input focus
+- Added `DeleteElementMessage`, `NudgeElementMessage` to protocol.ts
+- Added `ElementDeletedMessage`, `NudgeCompleteMessage` to protocol.ts (bridge-to-editor)
+- Added `deleteElement()` and `nudgeElement()` handlers in bridge.ts with cumulative delta tracking
+- Removed duplicate keyboard listeners from toolbar.ts, history.ts, and overlay.ts
+- Added `forge:requestDeselect` event so keyboard handler can trigger deselection via overlay
+- Wired keyboard handler in app.ts after all other modules initialized
+- Files changed: src/editor/keyboard.ts, src/bridge/protocol.ts, src/bridge/bridge.ts, src/editor/toolbar.ts, src/editor/history.ts, src/editor/overlay.ts, src/editor/app.ts, PRD.md
+- Learnings for future iterations:
+  - Centralized keyboard handler avoids duplicate listeners and conflicting shortcut checks
+  - Nudge uses cumulative deltas per element (Map<xpath, delta>) in bridge — same pattern as move but persistent
+  - `forge:requestDeselect` custom event decouples keyboard from overlay without circular imports
+  - Viewport shortcuts dispatch events for future viewport.ts module to handle (Task 17)
+  - Delete prevents removal of body/html elements as safety check
+---

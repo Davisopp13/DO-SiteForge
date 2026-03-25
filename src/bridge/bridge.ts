@@ -226,6 +226,51 @@
     (element as HTMLElement).blur();
   }
 
+  // --- Delete element ---
+
+  function deleteElement(xpath: string) {
+    const element = getElementByXPath(xpath);
+    if (!element || element === document.body || element === document.documentElement) return;
+
+    element.parentElement?.removeChild(element);
+
+    sendToEditor({
+      type: 'forge:elementDeleted',
+      xpath,
+    });
+  }
+
+  // --- Nudge element ---
+  // Tracks cumulative nudge transforms per element
+  const nudgeDeltas: Map<string, { x: number; y: number }> = new Map();
+
+  function nudgeElement(xpath: string, deltaX: number, deltaY: number) {
+    const element = getElementByXPath(xpath);
+    if (!element) return;
+
+    const htmlEl = element as HTMLElement;
+    let current = nudgeDeltas.get(xpath) || { x: 0, y: 0 };
+    current.x += deltaX;
+    current.y += deltaY;
+    nudgeDeltas.set(xpath, current);
+
+    htmlEl.style.transform = `translate(${current.x}px, ${current.y}px)`;
+
+    const rect = element.getBoundingClientRect();
+    sendToEditor({
+      type: 'forge:nudgeComplete',
+      xpath,
+      finalRect: {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      },
+      totalDeltaX: current.x,
+      totalDeltaY: current.y,
+    });
+  }
+
   // --- Undo/Redo operations ---
 
   function undoRedoMove(xpath: string, deltaX: number, deltaY: number) {
@@ -331,6 +376,16 @@
 
       case 'forge:undoRedoText': {
         undoRedoSetText(data.xpath, data.text);
+        break;
+      }
+
+      case 'forge:deleteElement': {
+        deleteElement(data.xpath);
+        break;
+      }
+
+      case 'forge:nudgeElement': {
+        nudgeElement(data.xpath, data.deltaX, data.deltaY);
         break;
       }
     }

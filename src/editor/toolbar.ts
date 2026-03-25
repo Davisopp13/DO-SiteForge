@@ -107,22 +107,7 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
     }
   }) as EventListener);
 
-  // Keyboard shortcuts
-  window.addEventListener('keydown', (e: KeyboardEvent) => {
-    // Don't fire shortcuts during text editing
-    const isTextEditing = modeBadge.textContent === 'Text edit mode';
-    if (isTextEditing) return;
-
-    // Don't fire if focus is in an input/textarea
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-
-    const tool = TOOL_SHORTCUTS[e.key.toLowerCase()];
-    if (tool) {
-      e.preventDefault();
-      setTool(tool);
-    }
-  });
+  // Keyboard shortcuts are handled centrally by keyboard.ts
 
   const manager: ToolbarManager = {
     get activeTool() { return activeTool; },

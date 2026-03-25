@@ -183,7 +183,7 @@ siteforge/
   - Show undo/redo availability in the toolbar (subtle indicators)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 13: Keyboard shortcuts handler**
+- [x] **Task 13: Keyboard shortcuts handler**
   - Create `src/editor/keyboard.ts` — centralized keyboard event handler
   - V: select tool, M: move tool, T: text tool, A: add element
   - 1: mobile viewport, 2: tablet viewport, 3: desktop viewport, 4: custom viewport

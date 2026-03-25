@@ -331,14 +331,10 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     }));
   }
 
-  // Listen for Escape key to exit text edit mode
-  window.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && state.isTextEditing && state.selectedElement) {
-      canvas.sendToBridge({
-        type: 'forge:textEditEnd',
-        xpath: state.selectedElement.xpath,
-      });
-    }
+  // Escape key handling is centralized in keyboard.ts
+  // Listen for deselect requests from keyboard handler
+  window.addEventListener('forge:requestDeselect', () => {
+    handleSelect(null);
   });
 
   // --- Drawing functions ---
