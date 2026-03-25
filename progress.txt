@@ -232,3 +232,18 @@
   - Overlay's `activeTool` state driven by `forge:toolChanged` event avoids importing toolbar
   - Bridge's `elementFromPoint` used to find parent for insertion — consistent with hover/select pattern
 ---
+
+## Iteration 15 - Task 15: Wire the full open command end-to-end
+- Updated `src/cli/commands/open.ts` to: detect project type, spawn dev server, start editor server, open browser, handle Ctrl+C
+- Installed `open` npm package for automatic browser launching
+- Fixed `bin` field in package.json to point to `dist/bin/forge.js` (correct tsup output path)
+- Clean startup message with chalk: project name, type, ports, ready indicator
+- Graceful shutdown: SIGINT/SIGTERM kills dev server and closes Express server with 3s force-exit fallback
+- Test fixture at `test/fixtures/static-site/index.html` already existed from Task 5
+- Files changed: src/cli/commands/open.ts, package.json
+- Learnings for future iterations:
+  - macOS has no `timeout` command — use Node.js spawn with setTimeout for testing servers
+  - tsup outputs `bin/forge.ts` to `dist/bin/forge.js` (preserves directory structure) — bin field must match
+  - Dynamic `import('open')` works fine for browser launching, with silent catch for headless environments
+  - `killDevServer()` from proxy.ts handles child process cleanup; `server.close()` handles Express
+---

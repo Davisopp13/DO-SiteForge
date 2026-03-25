@@ -202,7 +202,7 @@ siteforge/
   - Record the insertion in the history stack so it's undoable
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 15: Wire the full open command end-to-end**
+- [x] **Task 15: Wire the full open command end-to-end**
   - Update `src/cli/commands/open.ts` to: detect project type, spawn the target dev server, start the SiteForge Express server, inject the bridge script, open the browser to localhost:3000 automatically (use the `open` npm package)
   - Print a clean startup message in the terminal with chalk: project name, type, ports, and a "Ready" indicator
   - Handle Ctrl+C gracefully — kill the target dev server child process and exit cleanly
