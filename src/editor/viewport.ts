@@ -59,6 +59,7 @@ const PRESETS: Record<ViewportPreset, PresetConfig> = {
 export function createViewport(canvasEl: HTMLElement): ViewportManager {
   let activePreset: ViewportPreset = 'desktop';
   let customWidth = 1024;
+  let isDraggingSlider = false;
   const buttons: Map<ViewportPreset, HTMLButtonElement> = new Map();
 
   // Create viewport bar
@@ -92,6 +93,64 @@ export function createViewport(canvasEl: HTMLElement): ViewportManager {
   // Insert bar at the top of the canvas area (before other children)
   canvasEl.insertBefore(bar, canvasEl.firstChild);
 
+  // Custom slider bar — inserted after the viewport bar
+  const sliderBar = document.createElement('div');
+  sliderBar.id = 'sf-viewport-slider-bar';
+  sliderBar.className = 'sf-viewport-slider-bar';
+  sliderBar.style.display = 'none';
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '320';
+  slider.max = '1920';
+  slider.step = '1';
+  slider.value = String(customWidth);
+  slider.className = 'sf-viewport-slider';
+
+  const sliderValue = document.createElement('span');
+  sliderValue.className = 'sf-viewport-slider-value';
+  sliderValue.textContent = `${customWidth}px`;
+
+  sliderBar.appendChild(slider);
+  sliderBar.appendChild(sliderValue);
+
+  // Insert slider bar right after the viewport bar
+  bar.insertAdjacentElement('afterend', sliderBar);
+
+  // Slider real-time updates via oninput (not onchange)
+  slider.addEventListener('input', () => {
+    const width = parseInt(slider.value, 10);
+    customWidth = width;
+    sliderValue.textContent = `${width}px`;
+    updateDimensions();
+
+    // Disable CSS transition on device frame during drag for instant feedback
+    if (!isDraggingSlider) {
+      isDraggingSlider = true;
+      const deviceFrame = document.getElementById('sf-device-frame');
+      if (deviceFrame) {
+        deviceFrame.classList.add('sf-no-transition');
+      }
+    }
+
+    // Dispatch viewport change for canvas to resize iframe
+    window.dispatchEvent(new CustomEvent('forge:viewportChanged', {
+      detail: { preset: 'custom', width },
+    }));
+  });
+
+  // Re-enable CSS transition when slider is released
+  slider.addEventListener('mouseup', onSliderRelease);
+  slider.addEventListener('touchend', onSliderRelease);
+
+  function onSliderRelease() {
+    isDraggingSlider = false;
+    const deviceFrame = document.getElementById('sf-device-frame');
+    if (deviceFrame) {
+      deviceFrame.classList.remove('sf-no-transition');
+    }
+  }
+
   // Set initial active state
   updateActiveButton();
 
@@ -99,6 +158,13 @@ export function createViewport(canvasEl: HTMLElement): ViewportManager {
     activePreset = preset;
     updateActiveButton();
     updateDimensions();
+    updateSliderVisibility();
+
+    // Sync slider value when switching to custom
+    if (preset === 'custom') {
+      slider.value = String(customWidth);
+      sliderValue.textContent = `${customWidth}px`;
+    }
 
     // Dispatch viewport change event
     const width = preset === 'custom' ? customWidth : PRESETS[preset].width;
@@ -121,11 +187,8 @@ export function createViewport(canvasEl: HTMLElement): ViewportManager {
     }
   }
 
-  function setCustomWidth(width: number) {
-    customWidth = width;
-    if (activePreset === 'custom') {
-      updateDimensions();
-    }
+  function updateSliderVisibility() {
+    sliderBar.style.display = activePreset === 'custom' ? 'flex' : 'none';
   }
 
   // Listen for viewport keyboard shortcuts (from keyboard.ts)

@@ -235,7 +235,7 @@ siteforge/
   - After resizing, dispatch a custom event `forge:viewport-changed` that the overlay listens for to recalculate element positions
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 19: Custom width slider**
+- [x] **Task 19: Custom width slider**
   - When Custom viewport is selected, show a slider bar below the viewport toggle bar
   - Slider range: 320px to 1920px, step of 1px
   - As the slider is dragged, the iframe width updates in real time (no debounce — it should feel continuous)
