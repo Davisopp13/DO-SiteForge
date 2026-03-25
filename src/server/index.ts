@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createBridgeInjector } from './inject.js';
 import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
 import { loadConfig, hasApiKey, type SiteForgeConfig } from './config.js';
+import { createChatRouter } from './routes/chat.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +59,12 @@ export function createServer(port = 3000, target?: ProxyTarget) {
   app.get('/', (_req, res) => {
     res.sendFile(path.join(editorSrcDir, 'index.html'));
   });
+
+  // JSON body parser for API routes
+  app.use(express.json());
+
+  // API: Chat with AI (SSE streaming)
+  app.use('/api/chat', createChatRouter());
 
   // API: Check AI config status
   app.get('/api/config/status', (_req, res) => {

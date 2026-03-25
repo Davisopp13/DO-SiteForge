@@ -404,3 +404,21 @@
   - `satisfies AIError` gives type safety on thrown error objects without wrapping in a class
   - PageContext types defined here will be reused by context.ts (editor-side) and chat.ts (route)
 ---
+
+## Iteration 26 - Task 3: Chat API route with SSE streaming
+- Created `src/server/routes/chat.ts` with `POST /api/chat` endpoint
+- Request body: `{ message, context, history }` — validates message is present
+- Assembles conversation from history + new user message, builds system prompt from context
+- Sets SSE headers (text/event-stream, no-cache, keep-alive, X-Accel-Buffering: no)
+- Pipes streamChat() ReadableStream as SSE events: `event: delta\ndata: {"text":"..."}\n\n`
+- Sends `event: done` on completion, `event: error` on failure (both mid-stream and pre-stream)
+- Returns 400 JSON error if no API key configured or message missing
+- Registered route in `src/server/index.ts` with `express.json()` middleware
+- Files changed: src/server/routes/chat.ts (new), src/server/index.ts
+- Learnings for future iterations:
+  - `express.json()` must be registered before API routes — added globally before chat route
+  - `res.flushHeaders()` ensures SSE headers are sent immediately before streaming starts
+  - `X-Accel-Buffering: no` prevents nginx/reverse proxies from buffering SSE
+  - Error handling has two paths: pre-headers (JSON 500) and post-headers (SSE error event)
+  - `app.use('/api/chat', router)` with `router.post('/')` = POST /api/chat
+---

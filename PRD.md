@@ -63,7 +63,7 @@ src/
   - Files to create: `src/server/ai.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 3: Chat API route with SSE streaming**
+- [x] **Task 3: Chat API route with SSE streaming**
   - Create `src/server/routes/chat.ts` with `POST /api/chat` endpoint
   - Request body: `{ message: string, context: PageContext, history: ChatMessage[] }`
   - Assembles the full prompt: system prompt + page context (injected into system prompt) + conversation history + new user message
