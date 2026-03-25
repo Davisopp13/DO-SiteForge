@@ -738,3 +738,15 @@
   - spawn() with `stdio: ['pipe', 'pipe', 'pipe']` gives full control over all streams
   - `for await (const chunk of child.stdout)` is the cleanest way to read stdout as async iterable
 ---
+
+## Iteration 46 - Task 4 (Phase 2.5A): Provider selection and startup integration
+- Updated `src/server/index.ts`: imports provider modules, runs `detectProviders()` on init, stores active provider in `app.locals.sfProvider`, added `GET /api/ai/status` endpoint returning `{ provider, available, supportsDirectWrites }`, re-detects providers on API key change
+- Updated `src/server/routes/chat.ts`: replaced direct `streamChat()` + `buildSystemPrompt()` imports with provider abstraction — now iterates `provider.streamChat()` async iterable, maps ChatEvent types to SSE events (delta, done, error, files)
+- Updated `src/cli/commands/open.ts`: replaced `hasApiKey` check with `detectProviders()` — startup shows "Claude Code (OAuth)", "Anthropic API (sk-...xxxx)", or "Disabled (no provider available)" with appropriate colors
+- Files changed: src/server/index.ts, src/server/routes/chat.ts, src/cli/commands/open.ts
+- Learnings for future iterations:
+  - `app.locals.sfProvider` is the single source of truth for which AI provider is active
+  - Chat route is fully provider-agnostic — just iterates async iterable and writes SSE events
+  - Provider re-detection on set-key ensures API key saved at runtime activates the anthropic-api provider
+  - `GET /api/ai/status` returns `supportsDirectWrites` — frontend uses this to show/hide Apply button (Task 7)
+---

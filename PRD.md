@@ -74,7 +74,7 @@ src/
   - Files to create: `src/server/providers/claude-code.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 4: Provider selection and startup integration**
+- [x] **Task 4: Provider selection and startup integration**
   - Update `src/server/ai.ts` to use `detectProviders()` on init
   - Log the active provider at startup via chalk: "AI: Claude Code (OAuth)" or "AI: Anthropic API (sk-...xxxx)" or "AI: Disabled (no provider available)"
   - Update `src/server/routes/chat.ts` to use the provider abstraction — it should call `ai.streamChat()` without knowing which provider is active

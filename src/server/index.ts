@@ -8,6 +8,9 @@ import { loadConfig, hasApiKey, setApiKey, type SiteForgeConfig } from './config
 import { createChatRouter } from './routes/chat.js';
 import { createFilesRouter } from './routes/files.js';
 import { scanProject, type ProjectContext } from './project.js';
+import { detectProviders, type AIProvider, type ProviderDetectionResult } from './providers/types.js';
+import { createClaudeCodeProvider } from './providers/claude-code.js';
+import { createAnthropicApiProvider } from './providers/anthropic-api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,10 +37,19 @@ export function createServer(port = 3000, target?: ProxyTarget) {
     ? scanProject(target.projectDir)
     : undefined;
 
-  // Expose config, project context, and project dir for route handlers
+  // Detect and select AI provider
+  const providers = detectProviders(
+    config,
+    () => createClaudeCodeProvider(),
+    () => createAnthropicApiProvider(config)
+  );
+
+  // Expose config, project context, project dir, and AI provider for route handlers
   app.locals.sfConfig = config;
   app.locals.sfProjectContext = projectContext;
   app.locals.sfProjectDir = target?.projectDir;
+  app.locals.sfProvider = providers.active;
+  app.locals.sfProviders = providers;
 
   // After tsup build: __dirname is dist/src/server/
   // Project root is 3 levels up from there
@@ -87,6 +99,16 @@ export function createServer(port = 3000, target?: ProxyTarget) {
     });
   });
 
+  // API: AI provider status (used by frontend to adapt UI)
+  app.get('/api/ai/status', (_req, res) => {
+    const provider = app.locals.sfProvider as AIProvider;
+    res.json({
+      provider: provider.name,
+      available: provider.available,
+      supportsDirectWrites: provider.supportsDirectFileWrites,
+    });
+  });
+
   // API: Set API key at runtime (saves to ~/.siteforge/config.json and reloads config)
   app.post('/api/config/set-key', (req, res) => {
     const { apiKey } = req.body as { apiKey?: string };
@@ -100,6 +122,14 @@ export function createServer(port = 3000, target?: ProxyTarget) {
       // Reload config so the new key takes effect immediately
       const newConfig = loadConfig(target?.projectDir);
       app.locals.sfConfig = newConfig;
+      // Re-detect providers with new config
+      const newProviders = detectProviders(
+        newConfig,
+        () => createClaudeCodeProvider(),
+        () => createAnthropicApiProvider(newConfig)
+      );
+      app.locals.sfProvider = newProviders.active;
+      app.locals.sfProviders = newProviders;
       res.json({ success: true, aiEnabled: hasApiKey(newConfig), model: newConfig.model });
     } catch (err) {
       res.status(500).json({ error: 'Failed to save API key' });

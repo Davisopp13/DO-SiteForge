@@ -5,7 +5,10 @@ import chalk from 'chalk';
 import { detectProject } from '../detect.js';
 import { createServer } from '../../server/index.js';
 import { spawnDevServer, killDevServer, type ProxyTarget } from '../../server/proxy.js';
-import { loadConfig, hasApiKey } from '../../server/config.js';
+import { loadConfig } from '../../server/config.js';
+import { detectProviders } from '../../server/providers/types.js';
+import { createClaudeCodeProvider } from '../../server/providers/claude-code.js';
+import { createAnthropicApiProvider } from '../../server/providers/anthropic-api.js';
 
 const EDITOR_PORT = 3000;
 
@@ -34,9 +37,14 @@ export const openCommand = new Command('open')
     // Spawn target dev server for non-static projects
     const devServerProcess = spawnDevServer(target);
 
-    // Load config and check API key
+    // Load config and detect AI provider
     const config = loadConfig(resolved);
-    const aiReady = hasApiKey(config);
+    const providers = detectProviders(
+      config,
+      () => createClaudeCodeProvider(),
+      () => createAnthropicApiProvider(config)
+    );
+    const activeProvider = providers.active;
 
     // Start SiteForge editor server
     const { server } = createServer(EDITOR_PORT, target);
@@ -51,19 +59,24 @@ export const openCommand = new Command('open')
     if (devServerProcess) {
       console.log(`  ${chalk.dim('Preview:')}  ${chalk.cyan(`http://localhost:${project.port}`)}`);
     }
-    if (aiReady) {
-      console.log(`  ${chalk.dim('AI:')}       ${chalk.green(`Ready (${config.model})`)}`);
+    if (activeProvider.name === 'claude-code') {
+      console.log(`  ${chalk.dim('AI:')}       ${chalk.green('Claude Code (OAuth)')}`);
+    } else if (activeProvider.name === 'anthropic-api') {
+      const keyHint = config.anthropicApiKey
+        ? `sk-...${config.anthropicApiKey.slice(-4)}`
+        : '';
+      console.log(`  ${chalk.dim('AI:')}       ${chalk.green(`Anthropic API (${keyHint})`)}`);
     } else {
-      console.log(`  ${chalk.dim('AI:')}       ${chalk.yellow('Disabled (no API key)')}`);
+      console.log(`  ${chalk.dim('AI:')}       ${chalk.yellow('Disabled (no provider available)')}`);
     }
     console.log('');
     console.log(chalk.green('  ✓ Ready') + chalk.dim(' — open the editor URL in your browser'));
     console.log(chalk.dim('  Press Ctrl+C to stop'));
     console.log('');
 
-    if (!aiReady) {
-      console.log(chalk.yellow('  ⚠ No ANTHROPIC_API_KEY found. AI features will be disabled.'));
-      console.log(chalk.dim('    Set it in your environment or in siteforge.config.json'));
+    if (activeProvider.name === 'disabled') {
+      console.log(chalk.yellow('  ⚠ No AI provider found. Install Claude Code for the best experience — no API key needed.'));
+      console.log(chalk.dim('    Or set ANTHROPIC_API_KEY in your environment or siteforge.config.json'));
       console.log('');
     }
 

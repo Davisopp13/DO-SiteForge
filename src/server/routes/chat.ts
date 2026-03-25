@@ -1,22 +1,25 @@
 import type { Request, Response, Router } from 'express';
 import { Router as createRouter } from 'express';
-import { streamChat, buildSystemPrompt, type ChatMessage, type PageContext, type AIError } from '../ai.js';
-import { hasApiKey, type SiteForgeConfig } from '../config.js';
+import type { ChatMessage, PageContext } from '../ai.js';
+import type { AIProvider, ChatParams } from '../providers/types.js';
 
 /**
  * POST /api/chat
  * Request body: { message: string, context: PageContext, history: ChatMessage[] }
  * Response: SSE stream with events: delta, done, error
+ *
+ * Uses the active AIProvider from app.locals.sfProvider.
+ * The route does not know which provider is active — it just calls streamChat().
  */
 export function createChatRouter(): Router {
   const router = createRouter();
 
   router.post('/', async (req: Request, res: Response) => {
-    const config = req.app.locals.sfConfig as SiteForgeConfig;
+    const provider = req.app.locals.sfProvider as AIProvider;
 
-    if (!hasApiKey(config)) {
+    if (!provider || !provider.available) {
       res.status(400).json({
-        error: 'AI features are disabled. Set ANTHROPIC_API_KEY or configure it in siteforge.config.json.',
+        error: 'AI features are disabled. Install Claude Code or set an API key.',
       });
       return;
     }
@@ -32,14 +35,6 @@ export function createChatRouter(): Router {
       return;
     }
 
-    // Build conversation: history + new user message
-    const messages: ChatMessage[] = [
-      ...(Array.isArray(history) ? history : []),
-      { role: 'user', content: message },
-    ];
-
-    const systemPrompt = buildSystemPrompt(context);
-
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -48,34 +43,38 @@ export function createChatRouter(): Router {
     res.flushHeaders();
 
     try {
-      const stream = await streamChat({
-        messages,
-        systemPrompt,
-        model: config.model || 'claude-sonnet-4-20250514',
-        maxTokens: config.maxTokens || 4096,
-        apiKey: config.anthropicApiKey!,
-      });
+      const params: ChatParams = {
+        message,
+        context: context || {},
+        history: Array.isArray(history) ? history : [],
+        projectRoot: (req.app.locals.sfProjectDir as string) || process.cwd(),
+      };
 
-      const reader = stream.getReader();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        // Send delta event
-        res.write(`event: delta\ndata: ${JSON.stringify({ text: value })}\n\n`);
+      for await (const event of provider.streamChat(params)) {
+        switch (event.type) {
+          case 'delta':
+            res.write(`event: delta\ndata: ${JSON.stringify({ text: event.data.text })}\n\n`);
+            break;
+          case 'done':
+            res.write(`event: done\ndata: {}\n\n`);
+            break;
+          case 'error':
+            res.write(`event: error\ndata: ${JSON.stringify({ message: event.data.message, type: event.data.errorType || 'unknown_error' })}\n\n`);
+            break;
+          case 'file_changed':
+            res.write(`event: files\ndata: ${JSON.stringify(event.data)}\n\n`);
+            break;
+        }
       }
 
-      // Send done event
+      // If the provider didn't explicitly yield a done event, send one
       res.write(`event: done\ndata: {}\n\n`);
       res.end();
     } catch (err) {
-      const aiError = err as AIError;
-      const errorMessage = aiError.message || 'An unexpected error occurred';
+      const errorMessage = err instanceof Error ? err.message : String(err);
 
-      // If headers already sent (SSE started), send error as SSE event
       if (res.headersSent) {
-        res.write(`event: error\ndata: ${JSON.stringify({ message: errorMessage, type: aiError.type || 'unknown_error' })}\n\n`);
+        res.write(`event: error\ndata: ${JSON.stringify({ message: errorMessage, type: 'unknown_error' })}\n\n`);
         res.end();
       } else {
         res.status(500).json({ error: errorMessage });
