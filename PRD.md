@@ -181,7 +181,7 @@ src/
   - Files to create: `src/editor/filechanges.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 14: File operations API**
+- [x] **Task 14: File operations API**
   - Create `src/server/routes/files.ts` with endpoints:
     - `GET /api/files/exists?path=<filepath>` — returns `{ exists: boolean }`
     - `POST /api/files/write` — body `{ filepath: string, content: string }` — writes file to the project directory

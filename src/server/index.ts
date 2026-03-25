@@ -6,6 +6,7 @@ import { createBridgeInjector } from './inject.js';
 import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
 import { loadConfig, hasApiKey, type SiteForgeConfig } from './config.js';
 import { createChatRouter } from './routes/chat.js';
+import { createFilesRouter } from './routes/files.js';
 import { scanProject, type ProjectContext } from './project.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,9 +34,10 @@ export function createServer(port = 3000, target?: ProxyTarget) {
     ? scanProject(target.projectDir)
     : undefined;
 
-  // Expose config and project context for route handlers
+  // Expose config, project context, and project dir for route handlers
   app.locals.sfConfig = config;
   app.locals.sfProjectContext = projectContext;
+  app.locals.sfProjectDir = target?.projectDir;
 
   // After tsup build: __dirname is dist/src/server/
   // Project root is 3 levels up from there
@@ -72,6 +74,9 @@ export function createServer(port = 3000, target?: ProxyTarget) {
 
   // API: Chat with AI (SSE streaming)
   app.use('/api/chat', createChatRouter());
+
+  // API: File operations (exists, read, write)
+  app.use('/api/files', createFilesRouter());
 
   // API: Check AI config status
   app.get('/api/config/status', (_req, res) => {
