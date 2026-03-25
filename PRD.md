@@ -144,7 +144,7 @@ siteforge/
   - Add "dragging" visual state (slight opacity reduction on the element)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 9: Inline text editing**
+- [x] **Task 9: Inline text editing**
   - In `src/editor/overlay.ts`, add double-click handler
   - On dblclick: send message to bridge to make the target element contentEditable=true and focus it
   - The bridge applies contentEditable, adds a visible focus ring (box-shadow: inset 0 0 0 1px blue)

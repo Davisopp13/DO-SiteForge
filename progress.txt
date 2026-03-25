@@ -123,3 +123,19 @@
   - Position indicator uses clientX/Y minus overlay rect for positioning, shows deltas not absolute coords
   - `toOverlayCoords` can be reused for both static and drag-adjusted rects by pre-adding delta to boundingRect
 ---
+
+## Iteration 9 - Task 9: Inline text editing
+- Added dblclick handler in overlay.ts to trigger text editing on selected/hovered elements
+- `enterTextEditMode()`: disables overlay pointer-events so user can type in iframe's contentEditable, shows "Editing text" indicator
+- `exitTextEditMode()`: re-enables overlay, re-queries element info from bridge (text content may have changed)
+- Bridge already had `startTextEdit()` / `endTextEdit()` / `textEditComplete` from Task 6 — just needed the overlay-side wiring
+- Escape key listener sends `forge:textEditEnd` to bridge, which triggers blur → `forge:textEditComplete` → `exitTextEditMode()`
+- Dispatches `forge:textEdited` event with xpath/oldText/newText for future history tracking (Task 12)
+- Dispatches `forge:textEditModeChanged` event for toolbar UI updates (Task 10)
+- Files changed: src/editor/overlay.ts, PRD.md, progress.txt
+- Learnings for future iterations:
+  - Bridge already had all text editing logic — overlay just needed mode switching + dblclick handler
+  - `pointerEvents = 'none'` on overlay lets user interact with iframe contentEditable directly
+  - Re-querying element info after text edit is important since textContent and boundingRect may change
+  - Custom events (`forge:textEdited`, `forge:textEditModeChanged`) decouple overlay from history and toolbar modules
+---

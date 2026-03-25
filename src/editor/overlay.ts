@@ -63,6 +63,10 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     drag: null,
   };
 
+  // Text edit mode indicator
+  const textEditIndicator = createTextEditIndicator();
+  overlayEl.appendChild(textEditIndicator);
+
   // Listen for bridge responses
   canvas.onBridgeMessage((data) => {
     switch (data.type) {
@@ -94,6 +98,19 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           };
           drawSelection(state.selectedElement);
         }
+        break;
+      }
+      case 'forge:textEditComplete': {
+        // Bridge signals that text editing has finished
+        exitTextEditMode();
+        // Dispatch event for history tracking
+        window.dispatchEvent(new CustomEvent('forge:textEdited', {
+          detail: {
+            xpath: data.xpath,
+            oldText: data.oldText,
+            newText: data.newText,
+          },
+        }));
         break;
       }
     }
@@ -197,6 +214,23 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     }
   });
 
+  overlayEl.addEventListener('dblclick', (e: MouseEvent) => {
+    if (state.isTextEditing) return;
+
+    // Double-click on a selected (or hovered) element to start text editing
+    const targetElement = state.hoveredElement || state.selectedElement;
+    if (!targetElement) return;
+
+    e.preventDefault();
+
+    // Select the element if not already selected
+    if (!state.selectedElement || state.selectedElement.xpath !== targetElement.xpath) {
+      handleSelect(targetElement);
+    }
+
+    enterTextEditMode(targetElement.xpath);
+  });
+
   overlayEl.addEventListener('mouseleave', () => {
     // If dragging, finalize on leave
     if (state.drag) {
@@ -210,6 +244,77 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     }
     state.hoveredElement = null;
     drawHoverHighlight(null);
+  });
+
+  // --- Text edit mode ---
+
+  function enterTextEditMode(xpath: string) {
+    state.isTextEditing = true;
+
+    // Disable overlay pointer-events so user can interact with the iframe's contentEditable element
+    overlayEl.style.pointerEvents = 'none';
+    overlayEl.style.cursor = 'text';
+
+    // Show "Editing text" indicator
+    textEditIndicator.style.display = 'block';
+
+    // Hide hover highlight and resize handles during text editing
+    hideElement(hoverHighlight);
+    hideResizeHandles();
+
+    // Send text edit start to bridge
+    canvas.sendToBridge({
+      type: 'forge:textEditStart',
+      xpath,
+    });
+
+    // Dispatch event for toolbar/UI updates
+    window.dispatchEvent(new CustomEvent('forge:textEditModeChanged', {
+      detail: { editing: true },
+    }));
+  }
+
+  function exitTextEditMode() {
+    state.isTextEditing = false;
+
+    // Re-enable overlay pointer-events
+    overlayEl.style.pointerEvents = 'auto';
+    overlayEl.style.cursor = 'default';
+
+    // Hide "Editing text" indicator
+    hideElement(textEditIndicator);
+
+    // Re-draw selection if element is still selected
+    if (state.selectedElement) {
+      // Re-query element info since text content may have changed
+      canvas.sendToBridge({
+        type: 'forge:getElementByXPath',
+        xpath: state.selectedElement.xpath,
+      });
+      // Handle the response to update selection
+      const onceHandler = (data: any) => {
+        if (data.type === 'forge:elementInfo' && data.requestType === 'byXPath' && data.element) {
+          state.selectedElement = data.element;
+          drawSelection(data.element);
+        }
+      };
+      canvas.onBridgeMessage(onceHandler);
+    }
+
+    // Dispatch event for toolbar/UI updates
+    window.dispatchEvent(new CustomEvent('forge:textEditModeChanged', {
+      detail: { editing: false },
+    }));
+  }
+
+  // Listen for Escape key to exit text edit mode
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && state.isTextEditing && state.selectedElement) {
+      canvas.sendToBridge({
+        type: 'forge:textEditEnd',
+        xpath: state.selectedElement.xpath,
+      });
+    }
   });
 
   // --- Drawing functions ---
@@ -399,6 +504,31 @@ function createPositionIndicator(): HTMLDivElement {
     white-space: nowrap;
     pointer-events: none;
     z-index: 14;
+  `;
+  return div;
+}
+
+function createTextEditIndicator(): HTMLDivElement {
+  const div = document.createElement('div');
+  div.id = 'sf-text-edit-indicator';
+  div.textContent = 'Editing text';
+  div.style.cssText = `
+    position: absolute;
+    display: none;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--sf-accent, #378ADD);
+    color: #fff;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+    line-height: 1;
+    padding: 5px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 15;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   `;
   return div;
 }
