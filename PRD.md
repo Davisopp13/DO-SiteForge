@@ -134,7 +134,7 @@ siteforge/
   - Deselect when clicking on empty space
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 8: Element dragging (move mode)**
+- [x] **Task 8: Element dragging (move mode)**
   - In `src/editor/overlay.ts`, add drag behavior when a selected element is mousedown'd
   - On mousedown on a selected element: capture start position
   - On mousemove while dragging: calculate delta, send `MoveMessage` to bridge with the delta

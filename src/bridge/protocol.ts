@@ -53,6 +53,11 @@ export interface MoveMessage {
   deltaY: number;
 }
 
+export interface FinishMoveMessage {
+  type: 'forge:finishMove';
+  xpath: string;
+}
+
 export interface TextEditStartMessage {
   type: 'forge:textEditStart';
   xpath: string;
@@ -68,6 +73,7 @@ export type EditorToBridgeMessage =
   | GetElementByXPathMessage
   | GetAllEditableElementsMessage
   | MoveMessage
+  | FinishMoveMessage
   | TextEditStartMessage
   | TextEditEndMessage;
 

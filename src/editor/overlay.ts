@@ -10,11 +10,21 @@ export interface OverlayManager {
   isTextEditing: boolean;
 }
 
+interface DragState {
+  isDragging: boolean;
+  startClientX: number;
+  startClientY: number;
+  currentDeltaX: number;
+  currentDeltaY: number;
+  elementXPath: string;
+}
+
 interface OverlayState {
   hoveredElement: ElementInfo | null;
   selectedElement: ElementInfo | null;
   isTextEditing: boolean;
   pendingHoverRequest: boolean;
+  drag: DragState | null;
 }
 
 export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): OverlayManager {
@@ -34,10 +44,12 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   const selectionBox = createHighlightDiv('sf-selection-box');
   const tagTooltip = createTagTooltip();
   const resizeHandles = createResizeHandles();
+  const positionIndicator = createPositionIndicator();
 
   overlayEl.appendChild(hoverHighlight);
   overlayEl.appendChild(selectionBox);
   overlayEl.appendChild(tagTooltip);
+  overlayEl.appendChild(positionIndicator);
   for (const handle of resizeHandles) {
     overlayEl.appendChild(handle);
   }
@@ -48,6 +60,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     selectedElement: null,
     isTextEditing: false,
     pendingHoverRequest: false,
+    drag: null,
   };
 
   // Listen for bridge responses
@@ -72,12 +85,61 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         handleSelect(data.element);
         break;
       }
+      case 'forge:moveComplete': {
+        // Update selection with final position after drag
+        if (state.selectedElement && state.selectedElement.xpath === data.xpath) {
+          state.selectedElement = {
+            ...state.selectedElement,
+            boundingRect: data.finalRect,
+          };
+          drawSelection(state.selectedElement);
+        }
+        break;
+      }
     }
   });
 
   // Mouse events on overlay
   overlayEl.addEventListener('mousemove', (e: MouseEvent) => {
     if (state.isTextEditing) return;
+
+    // Handle drag in progress
+    if (state.drag) {
+      const deltaX = e.clientX - state.drag.startClientX;
+      const deltaY = e.clientY - state.drag.startClientY;
+      state.drag.currentDeltaX = deltaX;
+      state.drag.currentDeltaY = deltaY;
+
+      // Send move to bridge for visual feedback
+      canvas.sendToBridge({
+        type: 'forge:move',
+        xpath: state.drag.elementXPath,
+        deltaX,
+        deltaY,
+      });
+
+      // Update position indicator near cursor
+      updatePositionIndicator(e.clientX, e.clientY, deltaX, deltaY);
+
+      // Update selection box position to follow the drag
+      if (state.selectedElement) {
+        const movedRect = {
+          x: state.selectedElement.boundingRect.x + deltaX,
+          y: state.selectedElement.boundingRect.y + deltaY,
+          width: state.selectedElement.boundingRect.width,
+          height: state.selectedElement.boundingRect.height,
+        };
+        const overlayCoords = toOverlayCoords(movedRect);
+        positionDiv(selectionBox, overlayCoords);
+        drawResizeHandles(overlayCoords);
+        // Move tag tooltip too
+        tagTooltip.style.left = `${overlayCoords.x}px`;
+        tagTooltip.style.top = `${overlayCoords.y - 22}px`;
+      }
+
+      return;
+    }
+
     if (state.pendingHoverRequest) return;
 
     const iframeOffset = canvas.getIframeOffset();
@@ -92,14 +154,42 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     });
   });
 
-  overlayEl.addEventListener('click', (e: MouseEvent) => {
+  overlayEl.addEventListener('mousedown', (e: MouseEvent) => {
     if (state.isTextEditing) return;
 
-    const iframeOffset = canvas.getIframeOffset();
-    const x = e.clientX - iframeOffset.x;
-    const y = e.clientY - iframeOffset.y;
+    // Start drag if clicking on a selected element
+    if (state.selectedElement && state.hoveredElement &&
+        state.hoveredElement.xpath === state.selectedElement.xpath) {
+      e.preventDefault();
+      state.drag = {
+        isDragging: true,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        currentDeltaX: 0,
+        currentDeltaY: 0,
+        elementXPath: state.selectedElement.xpath,
+      };
+      overlayEl.style.cursor = 'grabbing';
+    }
+  });
 
-    // Check if clicking on an element or empty space
+  overlayEl.addEventListener('mouseup', (e: MouseEvent) => {
+    if (state.drag) {
+      // Finalize the move
+      canvas.sendToBridge({
+        type: 'forge:finishMove',
+        xpath: state.drag.elementXPath,
+      });
+
+      hideElement(positionIndicator);
+      overlayEl.style.cursor = 'default';
+      state.drag = null;
+      return;
+    }
+
+    if (state.isTextEditing) return;
+
+    // Normal click — select the hovered element
     if (state.hoveredElement) {
       handleSelect(state.hoveredElement);
     } else {
@@ -108,11 +198,29 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   });
 
   overlayEl.addEventListener('mouseleave', () => {
+    // If dragging, finalize on leave
+    if (state.drag) {
+      canvas.sendToBridge({
+        type: 'forge:finishMove',
+        xpath: state.drag.elementXPath,
+      });
+      hideElement(positionIndicator);
+      overlayEl.style.cursor = 'default';
+      state.drag = null;
+    }
     state.hoveredElement = null;
     drawHoverHighlight(null);
   });
 
   // --- Drawing functions ---
+
+  function updatePositionIndicator(clientX: number, clientY: number, deltaX: number, deltaY: number) {
+    const overlayRect = overlayEl.getBoundingClientRect();
+    positionIndicator.textContent = `x: ${Math.round(deltaX)}, y: ${Math.round(deltaY)}`;
+    positionIndicator.style.display = 'block';
+    positionIndicator.style.left = `${clientX - overlayRect.x + 12}px`;
+    positionIndicator.style.top = `${clientY - overlayRect.y + 12}px`;
+  }
 
   function drawHoverHighlight(element: ElementInfo | null) {
     if (!element || (state.selectedElement && element.xpath === state.selectedElement.xpath)) {
@@ -273,6 +381,26 @@ function createResizeHandles(): HTMLDivElement[] {
   }
 
   return handles;
+}
+
+function createPositionIndicator(): HTMLDivElement {
+  const div = document.createElement('div');
+  div.id = 'sf-position-indicator';
+  div.style.cssText = `
+    position: absolute;
+    display: none;
+    background: rgba(26, 26, 26, 0.9);
+    color: #e8e8e8;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 10px;
+    line-height: 1;
+    padding: 4px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 14;
+  `;
+  return div;
 }
 
 function positionDiv(div: HTMLElement, rect: ElementRect) {

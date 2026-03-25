@@ -106,3 +106,20 @@
   - Custom events (`forge:selectionChanged`) decouple overlay from properties panel
   - Bridge script's mouse forwarding (hover/select) is used as fallback when overlay pointer-events are disabled
 ---
+
+## Iteration 8 - Task 8: Element dragging (move mode)
+- Added drag behavior to overlay: mousedown on selected element starts drag, mousemove sends deltas to bridge, mouseup finalizes
+- Added `forge:finishMove` message type to protocol.ts and bridge handler
+- Bridge already had `handleMove()` (transform: translate + opacity) and `finishMove()` — just needed the message routing
+- Selection box, resize handles, and tag tooltip follow the dragged element in real time
+- Position indicator shows "x: N, y: N" delta near cursor during drag
+- Cursor changes to "grabbing" during drag
+- Drag finalizes on mouseup or mouseleave (safety)
+- Moved selection from click to mouseup to avoid conflicts with drag (mousedown starts drag, mouseup without drag = select)
+- Files changed: src/editor/overlay.ts, src/bridge/protocol.ts, src/bridge/bridge.ts, PRD.md
+- Learnings for future iterations:
+  - Bridge already had move/finishMove logic from Task 6 — just needed `forge:finishMove` message dispatch
+  - Selection on mouseup (not click) avoids conflict with drag starting on mousedown
+  - Position indicator uses clientX/Y minus overlay rect for positioning, shows deltas not absolute coords
+  - `toOverlayCoords` can be reused for both static and drag-adjusted rects by pre-adding delta to boundingRect
+---

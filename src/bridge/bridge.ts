@@ -275,6 +275,11 @@
         break;
       }
 
+      case 'forge:finishMove': {
+        finishMove(data.xpath);
+        break;
+      }
+
       case 'forge:textEditStart': {
         startTextEdit(data.xpath);
         break;
