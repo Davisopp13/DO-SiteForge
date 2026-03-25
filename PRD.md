@@ -103,7 +103,7 @@ siteforge/
   - The layout should be: 44px toolbar on left, flexible canvas center, 240px properties panel on right, using CSS grid
   - Test: `npx tsup && node dist/server.js` — opening localhost:3000 shows the three-panel layout
 
-- [ ] **Task 5: Dev server proxy and process management**
+- [x] **Task 5: Dev server proxy and process management**
   - Create `src/server/proxy.ts` — function that spawns the target project's dev server as a child process on port 4200
   - Use the detected devCommand from Task 3 (e.g., `npx next dev --port 4200`)
   - For static projects, use Express static file serving on port 4200

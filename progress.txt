@@ -53,3 +53,20 @@
   - Shebang in banner applies to ALL entries in a tsup config block — harmless on non-CLI files
   - macOS has no `timeout` command — use Node.js inline scripts for testing servers
 ---
+
+## Iteration 5 - Task 5: Dev server proxy and process management
+- Implemented `src/server/proxy.ts`: `spawnDevServer()` for non-static projects, `setupPreviewRoutes()` for routing
+- Static projects use `createStaticWithInjection()` for HTML files + `express.static` for assets
+- Non-static projects use `http-proxy-middleware` to proxy to dev server on port 4200 with auto-retry page
+- Implemented `src/server/inject.ts`: `createBridgeInjector()` middleware for proxied responses, `createStaticWithInjection()` for static HTML files
+- Updated `src/server/index.ts` to accept `ProxyTarget` param, serve `/forge-bridge.js`, wire injection + preview routes
+- Created `test/fixtures/static-site/index.html` with hero, cards, CTA, and footer sections
+- Fixed bridge script path: tsup IIFE outputs `bridge.global.js` not `bridge.js`
+- Files changed: src/server/proxy.ts, src/server/inject.ts, src/server/index.ts, test/fixtures/static-site/index.html
+- Learnings for future iterations:
+  - tsup IIFE format outputs as `<name>.global.js` — must use this name when serving
+  - `express.static` bypasses `res.send` overrides — for injecting into static HTML, need a custom handler that reads+modifies+sends
+  - macOS has no `timeout` command — use Node.js with process.exit for server tests
+  - `createServer()` now accepts optional `ProxyTarget` to set up preview routes
+  - For proxied dev servers, `http-proxy-middleware` handles the proxy with error fallback page
+---

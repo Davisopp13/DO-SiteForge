@@ -2,6 +2,8 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createBridgeInjector } from './inject.js';
+import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +19,7 @@ function findProjectRoot(startDir: string): string {
   return startDir;
 }
 
-export function createServer(port = 3000) {
+export function createServer(port = 3000, target?: ProxyTarget) {
   const app = express();
 
   // After tsup build: __dirname is dist/src/server/
@@ -25,6 +27,17 @@ export function createServer(port = 3000) {
   const projectRoot = findProjectRoot(__dirname);
   const editorSrcDir = path.join(projectRoot, 'src', 'editor');
   const editorDistDir = path.join(projectRoot, 'dist', 'editor');
+  const bridgeDistDir = path.join(projectRoot, 'dist', 'bridge');
+
+  // Serve the bundled bridge script
+  app.get('/forge-bridge.js', (_req, res) => {
+    const bridgePath = path.join(bridgeDistDir, 'bridge.global.js');
+    if (fs.existsSync(bridgePath)) {
+      res.type('application/javascript').sendFile(bridgePath);
+    } else {
+      res.status(404).send('// Bridge script not found');
+    }
+  });
 
   // Serve the bundled editor JS (takes priority over static)
   app.get('/editor/app.js', (_req, res) => {
@@ -38,6 +51,13 @@ export function createServer(port = 3000) {
   app.get('/', (_req, res) => {
     res.sendFile(path.join(editorSrcDir, 'index.html'));
   });
+
+  // Set up preview routes with bridge injection if a target project is provided
+  if (target) {
+    // Apply bridge injection middleware to preview routes
+    app.use('/preview', createBridgeInjector());
+    setupPreviewRoutes(app, target);
+  }
 
   const server = app.listen(port, () => {
     console.log(`SiteForge editor running at http://localhost:${port}`);
