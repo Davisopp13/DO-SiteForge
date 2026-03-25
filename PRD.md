@@ -89,7 +89,7 @@ src/
 
 ### Phase 2B: Canvas Context Serialization
 
-- [ ] **Task 5: Page context serializer**
+- [x] **Task 5: Page context serializer**
   - Create `src/editor/context.ts` with `getPageContext()` function
   - Queries the bridge for a page summary: ordered list of top-level sections with tag, class, approximate role (hero, nav, card, footer, etc.), and text preview (first 50 chars)
   - Add `forge:getPageSummary` message to protocol.ts

@@ -333,6 +333,54 @@
     });
   }
 
+  // --- Page summary ---
+
+  function guessRole(el: Element): string {
+    const tag = el.tagName.toLowerCase();
+    const cls = (typeof el.className === 'string' ? el.className : '').toLowerCase();
+    const id = (el.id || '').toLowerCase();
+    const combined = `${tag} ${cls} ${id}`;
+
+    if (tag === 'nav' || combined.includes('nav')) return 'navigation';
+    if (tag === 'header' || combined.includes('header')) return 'header';
+    if (tag === 'footer' || combined.includes('footer')) return 'footer';
+    if (combined.includes('hero')) return 'hero';
+    if (combined.includes('card')) return 'card';
+    if (combined.includes('sidebar') || combined.includes('aside') || tag === 'aside') return 'sidebar';
+    if (tag === 'main' || combined.includes('main-content') || combined.includes('main_content')) return 'main';
+    if (tag === 'section') return 'section';
+    if (tag === 'article') return 'article';
+    if (tag === 'form') return 'form';
+    return '';
+  }
+
+  function getPageSummary() {
+    const entries: any[] = [];
+    const body = document.body;
+    if (!body) return entries;
+
+    for (let i = 0; i < body.children.length; i++) {
+      const child = body.children[i];
+      // Skip script, style, and bridge-injected elements
+      if (['SCRIPT', 'STYLE', 'LINK', 'META', 'NOSCRIPT'].includes(child.tagName)) continue;
+
+      const text = (child.textContent || '').trim();
+      const rect = child.getBoundingClientRect();
+
+      entries.push({
+        tag: child.tagName.toLowerCase(),
+        className: typeof child.className === 'string' ? child.className : '',
+        id: child.id || '',
+        role: guessRole(child),
+        textPreview: text.substring(0, 50),
+        childCount: child.children.length,
+        boundingRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      });
+    }
+
+    return entries;
+  }
+
   // --- Undo/Redo operations ---
 
   function undoRedoMove(xpath: string, deltaX: number, deltaY: number) {
@@ -463,6 +511,12 @@
 
       case 'forge:reinsertElement': {
         reinsertElement(data.parentXPath, data.childIndex, data.html);
+        break;
+      }
+
+      case 'forge:getPageSummary': {
+        const entries = getPageSummary();
+        sendToEditor({ type: 'forge:pageSummary', entries });
         break;
       }
     }

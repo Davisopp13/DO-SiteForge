@@ -436,3 +436,18 @@
   - System prompt stays under ~800 tokens even with full context by keeping each section compact
   - `formatContextSummary()` gives a one-line view useful for server logs
 ---
+
+## Iteration 28 - Task 5: Page context serializer
+- Created `src/editor/context.ts` with `getPageContext()` function that queries bridge for page summary
+- Added `forge:getPageSummary` message to protocol.ts (editor→bridge) and `PageSummaryResponse` (bridge→editor)
+- Added `PageSummaryEntry` type to protocol.ts: `{ tag, className, id, role, textPreview, childCount, boundingRect }`
+- Bridge handler walks top-level children of `<body>`, skipping script/style/meta elements
+- `guessRole()` heuristic in bridge: checks tag name, className, and id for common section roles (hero, nav, header, footer, card, sidebar, etc.)
+- `getPageContext()` returns a Promise that resolves with entries from bridge, with 2s timeout fallback
+- Files changed: src/editor/context.ts (new), src/bridge/protocol.ts, src/bridge/bridge.ts
+- Learnings for future iterations:
+  - `onBridgeMessage` pushes to an array with no removal — use a `settled` flag to prevent double-resolve
+  - `PageSummaryEntry` reuses `ElementRect` from protocol.ts for boundingRect
+  - `guessRole()` is intentionally simple/heuristic — good enough for AI context without parsing ARIA roles
+  - `getPageContext()` will be extended in Task 6 with selection context
+---

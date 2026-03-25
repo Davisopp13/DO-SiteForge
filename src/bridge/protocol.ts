@@ -111,6 +111,10 @@ export interface ReinsertElementMessage {
   html: string;
 }
 
+export interface GetPageSummaryMessage {
+  type: 'forge:getPageSummary';
+}
+
 export type EditorToBridgeMessage =
   | GetElementAtPointMessage
   | GetElementByXPathMessage
@@ -125,7 +129,8 @@ export type EditorToBridgeMessage =
   | NudgeElementMessage
   | InsertElementMessage
   | RemoveElementMessage
-  | ReinsertElementMessage;
+  | ReinsertElementMessage
+  | GetPageSummaryMessage;
 
 // Messages from bridge -> editor
 export interface HoverMessage {
@@ -188,6 +193,21 @@ export interface ElementRemovedMessage {
   xpath: string;
 }
 
+export interface PageSummaryEntry {
+  tag: string;
+  className: string;
+  id: string;
+  role: string;
+  textPreview: string;
+  childCount: number;
+  boundingRect: ElementRect;
+}
+
+export interface PageSummaryResponse {
+  type: 'forge:pageSummary';
+  entries: PageSummaryEntry[];
+}
+
 export type BridgeToEditorMessage =
   | HoverMessage
   | SelectMessage
@@ -198,4 +218,5 @@ export type BridgeToEditorMessage =
   | ElementDeletedMessage
   | NudgeCompleteMessage
   | ElementInsertedMessage
-  | ElementRemovedMessage;
+  | ElementRemovedMessage
+  | PageSummaryResponse;
