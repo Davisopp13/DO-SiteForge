@@ -197,18 +197,120 @@ export function createSidebar(container: HTMLElement): SidebarManager {
         return;
       }
 
-      // Dispatch event for SSE stream handling (Task 12 will implement the stream reader)
-      window.dispatchEvent(new CustomEvent('forge:chatResponse', {
-        detail: { response: res },
-      }));
-
-      // For now, if no SSE handler picks it up, read as text fallback
+      // Read SSE stream from response body
       hideLoading();
+      const assistantEl = addMessage('assistant', '');
+      let fullContent = '';
+      let renderTimer: ReturnType<typeof setTimeout> | null = null;
+      let needsRender = false;
+
+      function scheduleRender(): void {
+        if (renderTimer) return;
+        needsRender = true;
+        renderTimer = setTimeout(() => {
+          renderTimer = null;
+          if (needsRender) {
+            needsRender = false;
+            updateAssistantMessage(assistantEl, fullContent);
+          }
+        }, 50);
+      }
+
+      function flushRender(): void {
+        if (renderTimer) {
+          clearTimeout(renderTimer);
+          renderTimer = null;
+        }
+        updateAssistantMessage(assistantEl, fullContent);
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        updateAssistantMessage(assistantEl, 'Error: Could not read response stream.');
+        setInputDisabled(false);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          sseBuffer += decoder.decode(value, { stream: true });
+
+          // Parse SSE events from buffer (split on double newline)
+          const parts = sseBuffer.split('\n\n');
+          // Keep last incomplete part in buffer
+          sseBuffer = parts.pop() || '';
+
+          for (const part of parts) {
+            if (!part.trim()) continue;
+
+            let eventType = 'message';
+            let eventData = '';
+
+            for (const line of part.split('\n')) {
+              if (line.startsWith('event: ')) {
+                eventType = line.slice(7).trim();
+              } else if (line.startsWith('data: ')) {
+                eventData = line.slice(6);
+              }
+            }
+
+            if (eventType === 'delta' && eventData) {
+              try {
+                const parsed = JSON.parse(eventData) as { text: string };
+                fullContent += parsed.text;
+                scheduleRender();
+              } catch {
+                // Skip malformed delta
+              }
+            } else if (eventType === 'done') {
+              // Stream complete
+              break;
+            } else if (eventType === 'error' && eventData) {
+              try {
+                const parsed = JSON.parse(eventData) as { message: string };
+                fullContent += `\n\nError: ${parsed.message}`;
+              } catch {
+                fullContent += '\n\nError: Unknown error occurred.';
+              }
+              break;
+            }
+          }
+        }
+      } catch {
+        if (!fullContent) {
+          fullContent = 'Connection error — try again.';
+        }
+      }
+
+      // Final render with complete content
+      flushRender();
+      finalizeAssistantMessage(assistantEl);
       setInputDisabled(false);
     } catch (err) {
       hideLoading();
       setInputDisabled(false);
-      addMessage('assistant', 'Connection error — check that the server is running and try again.');
+      const retryEl = addMessage('assistant', '');
+      const retryBubble = retryEl.querySelector('.sf-chat-bubble-ai');
+      if (retryBubble) {
+        retryBubble.innerHTML = `<p>Connection error — try again</p><button class="sf-chat-retry-btn">Retry</button>`;
+        const retryBtn = retryBubble.querySelector('.sf-chat-retry-btn');
+        retryBtn?.addEventListener('click', () => {
+          // Remove the error message
+          retryEl.remove();
+          messages.pop();
+          // Resend the last user message
+          const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+          if (lastUserMsg) {
+            sendMessage(lastUserMsg.content);
+          }
+        });
+      }
     }
   }
 

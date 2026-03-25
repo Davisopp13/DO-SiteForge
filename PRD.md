@@ -160,7 +160,7 @@ src/
   - Files to modify: `src/editor/sidebar.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 12: SSE stream handling and response rendering**
+- [x] **Task 12: SSE stream handling and response rendering**
   - In `src/editor/sidebar.ts`, implement SSE client for streaming AI responses
   - On send: open a fetch request to `/api/chat` and read the response body as a stream
   - Parse SSE events: `delta` events append text to the current AI message, `done` event finalizes the message, `error` event shows error in chat

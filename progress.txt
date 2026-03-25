@@ -554,3 +554,18 @@
   - `sendMessage` is async but doesn't await SSE streaming — that's Task 12's job
   - History for API excludes the just-added user message since it's sent as the `message` field
 ---
+
+## Iteration 33 - Task 12: SSE stream handling and response rendering
+- Replaced placeholder `forge:chatResponse` event dispatch with full SSE stream reader in `sendMessage()`
+- Uses `fetch().body.getReader()` + `TextDecoder` to read SSE stream incrementally
+- Parses SSE events by splitting on double newline: `delta` appends text, `done` finalizes, `error` shows error
+- Markdown re-rendering debounced to every 50ms via `scheduleRender()` / `flushRender()` pattern
+- On completion: final render flush, `finalizeAssistantMessage()`, re-enable input
+- Network errors show inline error message with "Retry" button that resends the last user message
+- Files changed: src/editor/sidebar.ts, PRD.md, progress.txt
+- Learnings for future iterations:
+  - SSE parsing: split buffer on `\n\n`, keep last incomplete part in buffer for next chunk
+  - `decoder.decode(value, { stream: true })` handles multi-byte chars split across chunks
+  - Debounce rendering at 50ms avoids excessive DOM updates during fast streaming
+  - Retry button removes the error message, pops it from messages array, then resends last user message
+---
