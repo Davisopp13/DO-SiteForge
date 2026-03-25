@@ -583,3 +583,33 @@
   - `resolveFileChanges` depends on Task 14's `/api/files/exists` endpoint — will fail gracefully until that's built
   - `parseFileChanges` is synchronous (string parsing only) — async resolution is separate step
 ---
+
+## Iteration 36 - Task 14: File operations API
+- Created `src/server/routes/files.ts` with three endpoints: GET /api/files/exists, GET /api/files/read, POST /api/files/write
+- `resolveAndValidate()` prevents path traversal by checking resolved path starts with project dir
+- POST /api/files/write creates parent directories recursively if they don't exist
+- Exposed `app.locals.sfProjectDir` in server/index.ts so file routes know the target project directory
+- Registered files router at `/api/files` in server/index.ts
+- Files changed: src/server/routes/files.ts (new), src/server/index.ts, PRD.md
+- Learnings for future iterations:
+  - `app.locals.sfProjectDir` stores target project dir — used by file operations routes
+  - Path traversal prevention: `path.resolve()` + startsWith check against normalized project dir
+  - File writes trigger HMR automatically since dev servers watch the filesystem — no manual reload needed
+  - `resolveAndValidate` returns null for invalid paths — callers respond with 400
+---
+
+## Iteration 37 - Task 15: Apply changes button in chat
+- When AI response contains file changes (fenced code blocks with file paths), renders collapsible file change cards below the message
+- Each card shows: filename (monospace), "new file" (green) or "modified" (blue) badge, expandable code preview
+- Code previews collapsed by default — click header or chevron to expand/collapse
+- "Apply changes" button below cards POSTs each file to `/api/files/write`
+- Apply states: spinner while applying, green "Changes applied — X files updated" on success, red error with Retry on failure
+- `finalizeAssistantMessage()` now async — parses changes, resolves isNew flags via API, renders cards
+- Added `renderFileChanges()` and `applyFileChanges()` to filechanges.ts
+- Files changed: src/editor/filechanges.ts, src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `parseFileChanges` is sync (string parsing), `resolveFileChanges` is async (API calls) — split for flexibility
+  - File card header is clickable for expand/collapse, toggle button also works independently
+  - Apply button disabled during apply to prevent double-clicks
+  - CSS uses existing design tokens (--sf-green, --sf-danger, --sf-accent) for consistent styling
+---

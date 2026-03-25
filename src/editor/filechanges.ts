@@ -8,6 +8,8 @@ export interface FileChange {
   isNew: boolean;
 }
 
+export type ApplyStatus = 'pending' | 'applying' | 'applied' | 'error';
+
 /** Infer language from file extension */
 function inferLanguage(filepath: string): string {
   const ext = filepath.split('.').pop()?.toLowerCase() || '';
@@ -86,4 +88,140 @@ export async function resolveFileChanges(changes: FileChange[]): Promise<FileCha
     })
   );
   return resolved;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Render file change cards and an "Apply changes" button.
+ * Returns a container element to append below the AI message.
+ */
+export function renderFileChanges(changes: FileChange[]): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'sf-file-changes';
+
+  // File change cards
+  for (const change of changes) {
+    const card = document.createElement('div');
+    card.className = 'sf-file-card';
+
+    // Header with filename and badge
+    const header = document.createElement('div');
+    header.className = 'sf-file-card-header';
+
+    const filename = document.createElement('span');
+    filename.className = 'sf-file-card-name';
+    filename.textContent = change.filepath;
+
+    const badge = document.createElement('span');
+    badge.className = change.isNew ? 'sf-file-badge sf-file-badge-new' : 'sf-file-badge sf-file-badge-modified';
+    badge.textContent = change.isNew ? 'new file' : 'modified';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'sf-file-card-toggle';
+    toggleBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    toggleBtn.title = 'Toggle code preview';
+
+    header.appendChild(filename);
+    header.appendChild(badge);
+    header.appendChild(toggleBtn);
+
+    // Collapsible code preview
+    const preview = document.createElement('div');
+    preview.className = 'sf-file-card-preview';
+    preview.style.display = 'none';
+    preview.innerHTML = `<pre><code>${escapeHtml(change.content)}</code></pre>`;
+
+    // Toggle expand/collapse
+    toggleBtn.addEventListener('click', () => {
+      const isExpanded = preview.style.display !== 'none';
+      preview.style.display = isExpanded ? 'none' : '';
+      toggleBtn.classList.toggle('expanded', !isExpanded);
+    });
+    header.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('.sf-file-card-toggle')) return;
+      const isExpanded = preview.style.display !== 'none';
+      preview.style.display = isExpanded ? 'none' : '';
+      toggleBtn.classList.toggle('expanded', !isExpanded);
+    });
+
+    card.appendChild(header);
+    card.appendChild(preview);
+    container.appendChild(card);
+  }
+
+  // Apply changes button
+  const applyBtn = document.createElement('button');
+  applyBtn.className = 'sf-apply-btn';
+  applyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Apply changes`;
+  container.appendChild(applyBtn);
+
+  // Apply click handler
+  applyBtn.addEventListener('click', () => {
+    applyFileChanges(changes, applyBtn, container);
+  });
+
+  return container;
+}
+
+/**
+ * Apply file changes by POSTing each to /api/files/write.
+ */
+async function applyFileChanges(
+  changes: FileChange[],
+  applyBtn: HTMLButtonElement,
+  container: HTMLElement,
+): Promise<void> {
+  applyBtn.disabled = true;
+  applyBtn.classList.add('sf-apply-btn-applying');
+  applyBtn.innerHTML = `<span class="sf-apply-spinner"></span> Applying...`;
+
+  let successCount = 0;
+  const errors: string[] = [];
+
+  for (const change of changes) {
+    try {
+      const res = await fetch('/api/files/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filepath: change.filepath, content: change.content }),
+      });
+      if (res.ok) {
+        successCount++;
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Write failed' }));
+        errors.push(`${change.filepath}: ${data.error || 'Write failed'}`);
+      }
+    } catch {
+      errors.push(`${change.filepath}: Network error`);
+    }
+  }
+
+  if (errors.length === 0) {
+    applyBtn.classList.remove('sf-apply-btn-applying');
+    applyBtn.classList.add('sf-apply-btn-done');
+    applyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Changes applied — ${successCount} file${successCount !== 1 ? 's' : ''} updated`;
+  } else {
+    applyBtn.classList.remove('sf-apply-btn-applying');
+    applyBtn.classList.add('sf-apply-btn-error');
+    applyBtn.innerHTML = `Failed: ${errors[0]}`;
+    applyBtn.disabled = false;
+
+    // Add retry button
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'sf-apply-retry-btn';
+    retryBtn.textContent = 'Retry';
+    retryBtn.addEventListener('click', () => {
+      retryBtn.remove();
+      applyBtn.classList.remove('sf-apply-btn-error');
+      applyFileChanges(changes, applyBtn, container);
+    });
+    container.appendChild(retryBtn);
+  }
 }

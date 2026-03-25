@@ -4,6 +4,7 @@ import type { ElementInfo } from '../bridge/protocol.js';
 import { createProperties, type PropertiesManager } from './properties.js';
 import { renderMarkdown } from './markdown.js';
 import type { CanvasContext } from './context.js';
+import { parseFileChanges, resolveFileChanges, renderFileChanges } from './filechanges.js';
 
 export type SidebarTab = 'chat' | 'properties';
 
@@ -432,9 +433,21 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     scrollToBottom();
   }
 
-  function finalizeAssistantMessage(el: HTMLElement): void {
-    // Mark as complete (future: parse file changes, add suggestion chips)
+  async function finalizeAssistantMessage(el: HTMLElement): Promise<void> {
     el.classList.add('sf-chat-msg-complete');
+
+    // Parse file changes from the assistant's response
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.role === 'assistant') {
+      const changes = parseFileChanges(lastMsg.content);
+      if (changes.length > 0) {
+        // Resolve isNew flags via API
+        const resolved = await resolveFileChanges(changes);
+        const fileChangesEl = renderFileChanges(resolved);
+        el.appendChild(fileChangesEl);
+      }
+    }
+
     scrollToBottom();
   }
 

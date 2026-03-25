@@ -193,7 +193,7 @@ src/
   - Files to modify: `src/server/index.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 15: Apply changes button in chat**
+- [x] **Task 15: Apply changes button in chat**
   - When an AI response contains file changes (detected by `filechanges.ts`), render them as collapsible file change cards below the message
   - Each card shows: filename, "new file" or "modified" badge, syntax-highlighted code preview (collapsed by default, expandable)
   - An "Apply changes" button appears below the file change cards

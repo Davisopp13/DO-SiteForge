@@ -728,3 +728,188 @@ html, body {
 .sf-device-frame.sf-no-transition {
   transition: none !important;
 }
+
+/* File change cards */
+.sf-file-changes {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sf-file-card {
+  border: 1px solid var(--sf-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--sf-bg-secondary);
+}
+
+.sf-file-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+
+.sf-file-card-header:hover {
+  background: var(--sf-overlay);
+}
+
+.sf-file-card-name {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  color: var(--sf-text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-file-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.sf-file-badge-new {
+  background: rgba(58, 125, 68, 0.15);
+  color: var(--sf-green);
+}
+
+.sf-file-badge-modified {
+  background: rgba(55, 138, 221, 0.15);
+  color: var(--sf-accent);
+}
+
+.sf-file-card-toggle {
+  border: none;
+  background: transparent;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: transform 0.2s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.sf-file-card-toggle:hover {
+  color: var(--sf-text-primary);
+}
+
+.sf-file-card-toggle.expanded {
+  transform: rotate(180deg);
+}
+
+.sf-file-card-preview pre {
+  margin: 0;
+  background: var(--sf-bg-tertiary);
+  border-top: 1px solid var(--sf-border);
+}
+
+.sf-file-card-preview pre code {
+  display: block;
+  padding: 8px 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-x: auto;
+  color: var(--sf-text-primary);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Apply changes button */
+.sf-apply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--sf-green);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.sf-apply-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.sf-apply-btn:disabled {
+  cursor: not-allowed;
+}
+
+.sf-apply-btn-applying {
+  background: var(--sf-text-secondary);
+  opacity: 0.7;
+}
+
+.sf-apply-btn-done {
+  background: var(--sf-green);
+  opacity: 0.8;
+  cursor: default;
+}
+
+.sf-apply-btn-error {
+  background: var(--sf-danger);
+  color: #fff;
+}
+
+.sf-apply-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sf-spin 0.6s linear infinite;
+}
+
+@keyframes sf-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sf-apply-retry-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--sf-danger);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sf-danger);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sf-apply-retry-btn:hover {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+/* Retry button in chat error messages */
+.sf-chat-retry-btn {
+  margin-top: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--sf-border);
+  border-radius: 4px;
+  background: var(--sf-surface);
+  color: var(--sf-text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
