@@ -274,3 +274,22 @@
   - Viewport bar must be inserted before canvas creates its iframe container (init order: toolbar → viewport → canvas)
   - `forge:viewportShortcut` event already dispatched by keyboard.ts from Task 13 — just needed to listen for it
 ---
+
+## Iteration 18 - Task 18: Iframe viewport resizing
+- Added device frame wrapper (`sf-device-frame`) between iframe container and iframe in canvas.ts
+- Three device frame classes: `sf-device-mobile` (3px border, 24px radius, notch), `sf-device-tablet` (2px border, 16px radius), `sf-device-desktop` (1px border, 8px radius)
+- CSS transition on width/border-radius (0.4s cubic-bezier) for smooth animation between presets
+- Device frame centered in container via `justify-content: center` on the flex container
+- Notch indicator: 80px wide, 20px tall, rounded bottom corners, shown only in mobile mode via opacity transition
+- iframe height fills available space via `height: 100%` in device frame with `flex-direction: column`
+- Dispatches `forge:viewport-changed` event (with hyphen) after `forge:viewportChanged` (camelCase) for overlay recalculation
+- Overlay listens for `forge:viewport-changed` to deselect elements and clear hover highlights
+- Custom viewport width auto-detects device category: <640px = mobile, 640-1023px = tablet, 1024px+ = desktop
+- Added `sf-no-transition` utility class for disabling transition during slider drag (Task 19)
+- Files changed: src/editor/canvas.ts, src/editor/styles.css, src/editor/overlay.ts, PRD.md
+- Learnings for future iterations:
+  - Overlay coordinate math (`toOverlayCoords`) works without changes because it already uses `iframe.getBoundingClientRect()` which reflects the iframe's actual on-screen position
+  - Two viewport events: `forge:viewportChanged` (from viewport.ts, triggers resizing) and `forge:viewport-changed` (from canvas.ts, signals resize done for overlay)
+  - Device frame uses `flex-shrink: 0` to prevent flexbox from shrinking it below the set width
+  - `requestAnimationFrame` before dispatching `forge:viewport-changed` ensures CSS transition has started
+---

@@ -225,7 +225,7 @@ siteforge/
   - Add these shortcuts to `src/editor/keyboard.ts` — they should NOT fire during text edit mode
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 18: Iframe viewport resizing**
+- [x] **Task 18: Iframe viewport resizing**
   - When a viewport preset is selected, animate the iframe container width to the target size using CSS transition (0.4s cubic-bezier ease)
   - Center the iframe horizontally in the canvas area when the viewport is smaller than the available canvas width
   - Mobile viewport: set iframe width to 375px, add a device frame border (3px rounded border with 24px border-radius to simulate phone shape), show a notch indicator at the top center (80px wide, 20px tall, rounded bottom corners)

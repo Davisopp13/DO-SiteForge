@@ -377,6 +377,13 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     handleSelect(null);
   });
 
+  // Listen for viewport changes — deselect and clear highlights
+  window.addEventListener('forge:viewport-changed', () => {
+    handleSelect(null);
+    state.hoveredElement = null;
+    drawHoverHighlight(null);
+  });
+
   // --- Drawing functions ---
 
   function updatePositionIndicator(clientX: number, clientY: number, deltaX: number, deltaY: number) {

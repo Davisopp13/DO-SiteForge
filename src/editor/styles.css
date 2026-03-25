@@ -291,3 +291,71 @@ html, body {
   color: var(--sf-text-secondary);
   white-space: nowrap;
 }
+
+/* Device frame wrapper */
+.sf-device-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border 0.3s ease,
+              padding-top 0.3s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sf-device-frame {
+    background: #fff;
+  }
+}
+
+/* Desktop viewport — full width, thin border, standard radius */
+.sf-device-desktop {
+  width: 100%;
+  border: 1px solid var(--sf-border);
+  border-radius: 8px;
+  padding-top: 0;
+}
+
+/* Tablet viewport — 2px border, 16px radius */
+.sf-device-tablet {
+  border: 2px solid var(--sf-border);
+  border-radius: 16px;
+  padding-top: 0;
+}
+
+/* Mobile viewport — 3px border, 24px radius, room for notch */
+.sf-device-mobile {
+  border: 3px solid var(--sf-border);
+  border-radius: 24px;
+  padding-top: 24px;
+}
+
+/* Device notch — shown only in mobile viewport */
+.sf-device-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 20px;
+  background: var(--sf-border);
+  border-radius: 0 0 12px 12px;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sf-device-mobile .sf-device-notch {
+  opacity: 1;
+}
+
+/* Disable transition during slider drag (added via JS) */
+.sf-device-frame.sf-no-transition {
+  transition: none !important;
+}

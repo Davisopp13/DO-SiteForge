@@ -17,8 +17,20 @@ export function createCanvas(canvasEl: HTMLElement): CanvasManager {
     flex: 1;
     display: flex;
     justify-content: center;
+    align-items: stretch;
     overflow: hidden;
   `;
+
+  // Device frame wrapper — holds the iframe and provides device chrome
+  const deviceFrame = document.createElement('div');
+  deviceFrame.id = 'sf-device-frame';
+  deviceFrame.className = 'sf-device-frame sf-device-desktop';
+
+  // Notch indicator for mobile viewport
+  const notch = document.createElement('div');
+  notch.id = 'sf-device-notch';
+  notch.className = 'sf-device-notch';
+  deviceFrame.appendChild(notch);
 
   // Create iframe pointing to /preview/
   const iframe = document.createElement('iframe');
@@ -29,10 +41,11 @@ export function createCanvas(canvasEl: HTMLElement): CanvasManager {
     height: 100%;
     border: none;
     background: #fff;
-    border-radius: 8px;
+    display: block;
   `;
 
-  container.appendChild(iframe);
+  deviceFrame.appendChild(iframe);
+  container.appendChild(deviceFrame);
   canvasEl.appendChild(container);
 
   // Bridge message handlers
@@ -47,6 +60,40 @@ export function createCanvas(canvasEl: HTMLElement): CanvasManager {
       handler(data);
     }
   });
+
+  // Listen for viewport changes and resize the iframe
+  window.addEventListener('forge:viewportChanged', ((e: CustomEvent) => {
+    const { preset, width } = e.detail || {};
+
+    // Remove all device frame classes
+    deviceFrame.classList.remove('sf-device-mobile', 'sf-device-tablet', 'sf-device-desktop');
+
+    if (preset === 'mobile' || (preset === 'custom' && width && width < 640)) {
+      deviceFrame.classList.add('sf-device-mobile');
+    } else if (preset === 'tablet' || (preset === 'custom' && width && width >= 640 && width < 1024)) {
+      deviceFrame.classList.add('sf-device-tablet');
+    } else {
+      deviceFrame.classList.add('sf-device-desktop');
+    }
+
+    // Set width
+    if (width === null) {
+      // Desktop: 100% width
+      deviceFrame.style.width = '100%';
+      deviceFrame.style.maxWidth = '100%';
+    } else {
+      deviceFrame.style.width = `${width}px`;
+      deviceFrame.style.maxWidth = '100%';
+    }
+
+    // Dispatch event for overlay to recalculate positions
+    // Use requestAnimationFrame to wait for CSS transition to start
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('forge:viewport-changed', {
+        detail: { preset, width },
+      }));
+    });
+  }) as EventListener);
 
   return {
     iframe,
