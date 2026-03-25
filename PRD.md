@@ -214,7 +214,7 @@ src/
 
 ### Phase 2E: Suggestion Chips & Polish
 
-- [ ] **Task 17: Context-aware suggestion chips**
+- [x] **Task 17: Context-aware suggestion chips**
   - After each AI response, show 2-3 clickable suggestion chips below the response
   - Chips are generated based on the current context: what element is selected, what the AI just did, and what viewport is active
   - Hardcoded suggestion logic (not AI-generated — keep it fast):

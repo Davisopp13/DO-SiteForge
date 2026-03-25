@@ -630,3 +630,16 @@
   - Input area DOM restructure: auto-apply row + input row (textarea + send btn) inside flex-column container
   - `applyFileChangesAuto` is a separate export from `applyFileChanges` — the latter manipulates a specific button DOM element
 ---
+
+## Iteration 39 - Task 17: Context-aware suggestion chips
+- Added 2-3 clickable suggestion chips below each AI response, context-aware based on current state
+- Chip logic: file changes present → "Add more content"/"Style this differently"/"Make it responsive"; element selected → "Make this bigger"/"Change the color"/"Add animation"; mobile viewport → "Optimize for mobile"/"Fix mobile layout"/"Add hamburger menu"; default → "Add a new section"/"Improve the design"/"Review the page"
+- Clicking a chip removes all chips and auto-sends the chip text as a message
+- CSS: pill-shaped chips with border, hover state transitions to accent color
+- Files changed: src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `getSuggestionChips()` reuses `parseFileChanges` to detect if response had file changes — avoids redundant parsing
+  - Mobile viewport detected via `.sf-device-mobile` class on the device frame element
+  - Chips rendered inside the message element so they're associated with the specific response
+  - Chips self-remove on click before sending to avoid stale UI
+---

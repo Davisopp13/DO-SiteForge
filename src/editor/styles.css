@@ -990,3 +990,31 @@ html, body {
   font-size: 11px;
   cursor: pointer;
 }
+
+/* Suggestion chips */
+.sf-suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.sf-suggestion-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--sf-border);
+  border-radius: 12px;
+  background: var(--sf-surface);
+  color: var(--sf-text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.sf-suggestion-chip:hover {
+  background: rgba(55, 138, 221, 0.1);
+  color: var(--sf-accent);
+  border-color: var(--sf-accent);
+}

@@ -475,6 +475,59 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     }, 2500);
   }
 
+  // Suggestion chip logic — context-aware suggestions shown after AI responses
+  function getSuggestionChips(lastAssistantContent: string): string[] {
+    const hasFileChanges = parseFileChanges(lastAssistantContent).length > 0;
+
+    // After a component/file was created or modified
+    if (hasFileChanges) {
+      return ['Add more content', 'Style this differently', 'Make it responsive'];
+    }
+
+    // When an element is selected
+    if (selectedElement) {
+      return ['Make this bigger', 'Change the color', 'Add animation'];
+    }
+
+    // Viewport-based suggestions
+    const viewportWidth = window.innerWidth;
+    const isMobileViewport = document.querySelector('.sf-device-mobile') !== null;
+    if (isMobileViewport || viewportWidth < 640) {
+      return ['Optimize for mobile', 'Fix mobile layout', 'Add hamburger menu'];
+    }
+
+    // Default suggestions
+    return ['Add a new section', 'Improve the design', 'Review the page'];
+  }
+
+  function renderSuggestionChips(parentEl: HTMLElement, content: string): void {
+    // Remove any existing chips
+    const existing = parentEl.querySelector('.sf-suggestion-chips');
+    if (existing) existing.remove();
+
+    const chips = getSuggestionChips(content);
+    if (chips.length === 0) return;
+
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'sf-suggestion-chips';
+
+    for (const chipText of chips) {
+      const chip = document.createElement('button');
+      chip.className = 'sf-suggestion-chip';
+      chip.textContent = chipText;
+      chip.addEventListener('click', () => {
+        // Remove chips on click
+        chipsContainer.remove();
+        // Send the chip text as a message
+        sendMessage(chipText);
+      });
+      chipsContainer.appendChild(chip);
+    }
+
+    parentEl.appendChild(chipsContainer);
+    scrollToBottom();
+  }
+
   async function finalizeAssistantMessage(el: HTMLElement): Promise<void> {
     el.classList.add('sf-chat-msg-complete');
 
@@ -502,6 +555,11 @@ export function createSidebar(container: HTMLElement): SidebarManager {
           el.appendChild(fileChangesEl);
         }
       }
+    }
+
+    // Show suggestion chips after AI response
+    if (lastMsg && lastMsg.role === 'assistant') {
+      renderSuggestionChips(el, lastMsg.content);
     }
 
     scrollToBottom();
