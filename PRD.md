@@ -115,7 +115,7 @@ src/
 
 ### Phase 2C: Chat Sidebar UI
 
-- [ ] **Task 8: Tabbed right panel — Properties + AI Chat**
+- [x] **Task 8: Tabbed right panel — Properties + AI Chat**
   - Refactor the right panel area to support tabs
   - Two tabs at the top of the right panel: "Properties" and "AI Chat"
   - "AI Chat" is the default active tab

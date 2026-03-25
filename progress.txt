@@ -483,3 +483,22 @@
   - `app.locals.sfProjectContext` available to route handlers for injecting into chat context
   - mainFiles capped at 30 entries to keep system prompt compact
 ---
+
+## Iteration 31 - Task 8: Tabbed right panel — Properties + AI Chat
+- Created `src/editor/sidebar.ts` with `createSidebar()` function
+- Two tabs: "AI Chat" (default active) and "Properties"
+- Context indicator shows selected element info at top of chat tab (e.g., "Context: <button> .cta-btn")
+- Auto-switches to Properties tab when an element is selected
+- Refactored `properties.ts` to export `renderPlaceholder()` and `renderPreviewPlaceholder()`, added `render()` method to PropertiesManager
+- Properties now tracks `currentElement` internally so it can re-render when tab switches
+- Updated `app.ts` to use `createSidebar()` instead of `createProperties()` directly — all event wiring goes through `sidebar.properties`
+- Widened right panel from 240px to 320px for chat content
+- Added CSS: tab bar with underline active state, context indicator with monospace font and accent color, chat placeholder
+- Tab styling: 13px text, muted inactive, accent underline on active
+- Files changed: src/editor/sidebar.ts (new), src/editor/properties.ts, src/editor/app.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `#sf-properties` is now a flex column container — tab bar and context indicator are flex-shrink:0, content areas flex:1 with overflow-y:auto
+  - Sidebar listens for `forge:selectionChanged` to auto-switch tab and update context indicator
+  - Properties panel preview mode listener still works since it's inside the properties module, not the sidebar
+  - Chat content area is a placeholder for now — Tasks 9-12 will build out the message list, input, and SSE handling
+---

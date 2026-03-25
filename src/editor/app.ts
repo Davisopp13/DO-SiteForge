@@ -3,7 +3,7 @@
 import { createCanvas } from './canvas.js';
 import { createOverlay } from './overlay.js';
 import { createToolbar } from './toolbar.js';
-import { createProperties } from './properties.js';
+import { createSidebar } from './sidebar.js';
 import { createHistory } from './history.js';
 import { createKeyboard } from './keyboard.js';
 import { createViewport } from './viewport.js';
@@ -30,8 +30,8 @@ function init() {
   // Initialize overlay for element interaction
   const overlay = createOverlay(canvasEl, canvas);
 
-  // Initialize properties panel
-  const properties = createProperties(propertiesEl);
+  // Initialize sidebar with tabbed Properties + AI Chat
+  const sidebar = createSidebar(propertiesEl);
 
   // Initialize history (undo/redo)
   const history = createHistory(canvas);
@@ -93,13 +93,13 @@ function init() {
 
   // Listen for selection changes to update properties panel
   window.addEventListener('forge:selectionChanged', ((e: CustomEvent) => {
-    properties.update(e.detail?.element || null);
+    sidebar.properties.update(e.detail?.element || null);
   }) as EventListener);
 
   // Listen for move updates to refresh properties panel live
   window.addEventListener('forge:elementMoved', ((e: CustomEvent) => {
     if (e.detail?.element) {
-      properties.update(e.detail.element);
+      sidebar.properties.update(e.detail.element);
     }
   }) as EventListener);
 
@@ -107,7 +107,7 @@ function init() {
   window.addEventListener('forge:textEdited', ((e: CustomEvent) => {
     // Re-select after text edit to update displayed text content
     if (overlay.selectedElement) {
-      properties.update(overlay.selectedElement);
+      sidebar.properties.update(overlay.selectedElement);
     }
   }) as EventListener);
 

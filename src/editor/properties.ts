@@ -1,13 +1,14 @@
 // Properties Panel — shows selected element info in the right sidebar
+// Exports render functions so the sidebar tab system can call them
 
 import type { ElementInfo } from '../bridge/protocol.js';
 
 export interface PropertiesManager {
   update(element: ElementInfo | null): void;
+  render(): void;
 }
 
 function parseColor(color: string): string | null {
-  // Returns a hex-ish representation for the swatch, or null if transparent
   if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return null;
   return color;
 }
@@ -69,21 +70,10 @@ function renderProperties(element: ElementInfo): string {
       ${propRow('Padding', `${padding.top} ${padding.right} ${padding.bottom} ${padding.left}`)}
       ${propRow('Margin', `${margin.top} ${margin.right} ${margin.bottom} ${margin.left}`)}
     </div>
-
-    <div class="sf-properties-footer">
-      <button class="sf-ask-ai-btn" disabled title="AI assistance coming in Phase 2">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="8" r="6.5"/>
-          <path d="M6 6.5a2 2 0 1 1 2.5 1.94V9.5" stroke-linecap="round"/>
-          <circle cx="8" cy="11.5" r="0.5" fill="currentColor" stroke="none"/>
-        </svg>
-        Ask AI
-      </button>
-    </div>
   `;
 }
 
-function renderPlaceholder(): string {
+export function renderPlaceholder(): string {
   return `
     <div class="sf-properties-placeholder">
       Select an element to see its properties
@@ -91,7 +81,7 @@ function renderPlaceholder(): string {
   `;
 }
 
-function renderPreviewPlaceholder(): string {
+export function renderPreviewPlaceholder(): string {
   return `
     <div class="sf-properties-placeholder">
       Preview mode — interactions disabled
@@ -101,26 +91,34 @@ function renderPreviewPlaceholder(): string {
 
 export function createProperties(container: HTMLElement): PropertiesManager {
   let isPreview = false;
-  container.innerHTML = renderPlaceholder();
+  let currentElement: ElementInfo | null = null;
+
+  function renderContent(): void {
+    if (isPreview) {
+      container.innerHTML = renderPreviewPlaceholder();
+    } else if (!currentElement) {
+      container.innerHTML = renderPlaceholder();
+    } else {
+      container.innerHTML = renderProperties(currentElement);
+    }
+  }
+
+  renderContent();
 
   // Listen for preview mode changes
   window.addEventListener('forge:previewModeChanged', ((e: CustomEvent) => {
     isPreview = e.detail?.preview ?? false;
-    if (isPreview) {
-      container.innerHTML = renderPreviewPlaceholder();
-    } else {
-      container.innerHTML = renderPlaceholder();
-    }
+    renderContent();
   }) as EventListener);
 
   const manager: PropertiesManager = {
     update(element: ElementInfo | null) {
-      if (isPreview) return; // Don't update properties while in preview mode
-      if (!element) {
-        container.innerHTML = renderPlaceholder();
-      } else {
-        container.innerHTML = renderProperties(element);
-      }
+      currentElement = element;
+      if (isPreview) return;
+      renderContent();
+    },
+    render() {
+      renderContent();
     },
   };
 

@@ -50,7 +50,7 @@ html, body {
 /* Three-panel grid layout */
 #sf-app {
   display: grid;
-  grid-template-columns: 44px 1fr 240px;
+  grid-template-columns: 44px 1fr 320px;
   grid-template-rows: 1fr;
   height: 100vh;
   width: 100vw;
@@ -76,12 +76,95 @@ html, body {
   flex-direction: column;
 }
 
-/* Right properties panel */
+/* Right sidebar (tabbed: Properties + AI Chat) */
 #sf-properties {
   background: var(--sf-bg-secondary);
   border-left: 1px solid var(--sf-border);
-  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Sidebar tab bar */
+.sf-sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--sf-border);
+  flex-shrink: 0;
+}
+
+.sf-sidebar-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.sf-sidebar-tab:hover {
+  color: var(--sf-text-primary);
+}
+
+.sf-sidebar-tab.active {
+  color: var(--sf-text-primary);
+}
+
+.sf-sidebar-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--sf-accent);
+  border-radius: 1px 1px 0 0;
+}
+
+/* Context indicator */
+.sf-sidebar-context {
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--sf-text-secondary);
+  border-bottom: 1px solid var(--sf-border);
+  flex-shrink: 0;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  background: var(--sf-overlay);
+}
+
+.sf-context-label {
+  color: var(--sf-text-secondary);
+}
+
+.sf-context-element {
+  color: var(--sf-accent);
+}
+
+/* Sidebar content containers */
+.sf-sidebar-content {
+  flex: 1;
   overflow-y: auto;
+  padding: 12px;
+}
+
+/* Chat placeholder */
+.sf-chat-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--sf-text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.sf-chat-placeholder svg {
+  opacity: 0.4;
 }
 
 /* Panel shared styles */
