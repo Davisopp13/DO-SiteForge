@@ -84,7 +84,7 @@ siteforge/
   - Add `bin` field to package.json pointing `forge` to the built CLI output
   - Test: `npx tsup && node dist/forge.js open ./` prints the expected message without errors
 
-- [ ] **Task 3: Project type detection**
+- [x] **Task 3: Project type detection**
   - Create `src/cli/detect.ts` that scans a directory and returns project info
   - Detect: Next.js (check for next in package.json deps), Vite (check for vite), Astro (check for astro), Static (fallback — has index.html)
   - Return object: `{ type: 'nextjs' | 'vite' | 'astro' | 'static', devCommand: string, port: number, entry: string }`

@@ -24,3 +24,15 @@
   - Commander subcommands work well as separate `new Command('name')` exports added via `addCommand()`
   - `bin` field in package.json already pointed to `dist/forge.js` from Task 1
 ---
+
+## Iteration 3 - Task 3: Project type detection
+- Implemented `detectProject()` in `src/cli/detect.ts` — scans directory for package.json, detects Next.js/Vite/Astro/static
+- Returns `ProjectInfo` with type, devCommand, port (4200), and entry file
+- Detection priority: Next.js > Astro > Vite > static fallback
+- Wrote 9 vitest tests covering all project types, edge cases (both deps/devDeps), priority ordering, missing package.json
+- Files changed: src/cli/detect.ts, test/detect.test.ts
+- Learnings for future iterations:
+  - All project types use port 4200 for the target dev server; editor uses 3000
+  - Static projects have empty devCommand — server will handle them with Express static serving
+  - Detection checks both `dependencies` and `devDependencies` (merged into one object)
+---
