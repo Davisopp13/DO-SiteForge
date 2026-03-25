@@ -502,3 +502,21 @@
   - Properties panel preview mode listener still works since it's inside the properties module, not the sidebar
   - Chat content area is a placeholder for now — Tasks 9-12 will build out the message list, input, and SSE handling
 ---
+
+## Iteration 32 - Task 9: Chat message list
+- Built scrollable chat message area in sidebar.ts replacing the placeholder
+- User messages: right-aligned, accent background at 10% opacity, 12px text, 12px rounded corners (bottom-right 4px)
+- AI messages: left-aligned, no background, 13px text with basic markdown (HTML-escaped with line breaks for now)
+- Three animated dots loading indicator with pulse animation
+- Auto-scroll to bottom on new messages via requestAnimationFrame
+- Empty state with chat icon and "Describe a change to your site" prompt
+- SidebarManager interface extended with: addMessage(), updateAssistantMessage(), finalizeAssistantMessage(), showLoading(), hideLoading(), messages array, chatMessagesEl, isLoading
+- ChatMessage type exported: { role, content, timestamp }
+- CSS: code block styles with filename header + copy button, inline code, loading dots animation
+- Files changed: src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - Loading indicator inserted/removed from chatMessagesEl dynamically — new messages insert before it
+  - renderBasicMarkdown is a placeholder — Task 10 will build the full markdown renderer
+  - Messages stored in-memory array for conversation history (used by future Task 11/12 for sending to API)
+  - scrollToBottom uses requestAnimationFrame to ensure DOM has updated before scrolling
+---

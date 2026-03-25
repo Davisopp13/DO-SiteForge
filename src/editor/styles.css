@@ -167,6 +167,146 @@ html, body {
   opacity: 0.4;
 }
 
+/* Chat messages container */
+.sf-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Chat message — shared */
+.sf-chat-msg {
+  display: flex;
+  max-width: 100%;
+}
+
+/* User messages — right-aligned */
+.sf-chat-msg-user {
+  justify-content: flex-end;
+}
+
+.sf-chat-bubble-user {
+  background: rgba(55, 138, 221, 0.1);
+  color: var(--sf-text-primary);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 12px 12px 4px 12px;
+  max-width: 85%;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* AI messages — left-aligned */
+.sf-chat-msg-assistant {
+  justify-content: flex-start;
+}
+
+.sf-chat-bubble-ai {
+  color: var(--sf-text-primary);
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+.sf-chat-bubble-ai p {
+  margin-bottom: 8px;
+}
+
+.sf-chat-bubble-ai p:last-child {
+  margin-bottom: 0;
+}
+
+/* Inline code in AI messages */
+.sf-chat-bubble-ai code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  background: var(--sf-overlay);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Code blocks in AI messages */
+.sf-chat-bubble-ai pre {
+  background: var(--sf-bg-tertiary);
+  border: 1px solid var(--sf-border);
+  border-radius: 6px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.sf-chat-bubble-ai pre code {
+  display: block;
+  padding: 10px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-x: auto;
+  background: transparent;
+}
+
+/* Code block filename header */
+.sf-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 10px;
+  color: var(--sf-text-secondary);
+  background: var(--sf-bg-secondary);
+  border-bottom: 1px solid var(--sf-border);
+}
+
+.sf-code-copy-btn {
+  border: none;
+  background: transparent;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  font-family: inherit;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sf-code-copy-btn:hover {
+  background: var(--sf-overlay);
+  color: var(--sf-text-primary);
+}
+
+/* Loading indicator — three animated dots */
+.sf-chat-loading {
+  display: flex;
+  gap: 4px;
+  padding: 8px 4px;
+}
+
+.sf-chat-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--sf-text-secondary);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: sf-dot-pulse 1.4s ease-in-out infinite;
+}
+
+.sf-chat-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.sf-chat-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes sf-dot-pulse {
+  0%, 80%, 100% { opacity: 0.4; transform: scale(1); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+
 /* Panel shared styles */
 .sf-panel {
   user-select: none;

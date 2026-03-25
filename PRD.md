@@ -128,7 +128,7 @@ src/
   - Files to modify: `src/editor/app.ts` (replace direct properties init with sidebar init), `src/editor/properties.ts` (export render function that sidebar calls)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 9: Chat message list**
+- [x] **Task 9: Chat message list**
   - In `src/editor/sidebar.ts`, build the chat message area
   - Scrollable message container that takes up all space between the tab bar and input area
   - User messages: right-aligned, background uses `--sf-accent` at 10% opacity, 12px text, 12px rounded corners (rounded bottom-right is 4px)
