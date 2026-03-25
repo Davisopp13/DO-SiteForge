@@ -1,0 +1,14 @@
+## Iteration 1 - Task 1: Initialize project and install dependencies
+- Initialized npm project with name "siteforge", type "module"
+- Installed deps: commander, express, http-proxy-middleware, chokidar, chalk
+- Installed dev deps: typescript, tsup, @types/node, @types/express, vitest
+- Created tsconfig.json (ESNext, strict, bundler moduleResolution)
+- Created tsup.config.ts with 3 entry points: CLI (esm/node), editor (esm/browser), bridge (iife/browser)
+- Created full directory structure with stub files for all modules
+- Files changed: package.json, tsconfig.json, tsup.config.ts, bin/forge.ts, all src/**/*.ts stubs, test/detect.test.ts, src/editor/index.html, src/editor/styles.css
+- Learnings for future iterations:
+  - tsup v8 works well with multiple configs via array in defineConfig
+  - Bridge script uses IIFE format since it's injected into arbitrary pages
+  - TypeScript 6 with "module": "ESNext" + "moduleResolution": "bundler" works for this setup
+  - Express 5 is installed (v5.2.1)
+---
