@@ -187,6 +187,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         elementXPath: state.selectedElement.xpath,
       };
       overlayEl.style.cursor = 'grabbing';
+
+      // Dispatch drag start for history tracking
+      window.dispatchEvent(new CustomEvent('forge:dragStarted', {
+        detail: { xpath: state.selectedElement.xpath },
+      }));
     }
   });
 
@@ -197,6 +202,15 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         type: 'forge:finishMove',
         xpath: state.drag.elementXPath,
       });
+
+      // Dispatch drag finished for history tracking
+      window.dispatchEvent(new CustomEvent('forge:dragFinished', {
+        detail: {
+          xpath: state.drag.elementXPath,
+          deltaX: state.drag.currentDeltaX,
+          deltaY: state.drag.currentDeltaY,
+        },
+      }));
 
       hideElement(positionIndicator);
       overlayEl.style.cursor = 'default';
@@ -238,6 +252,16 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         type: 'forge:finishMove',
         xpath: state.drag.elementXPath,
       });
+
+      // Dispatch drag finished for history tracking
+      window.dispatchEvent(new CustomEvent('forge:dragFinished', {
+        detail: {
+          xpath: state.drag.elementXPath,
+          deltaX: state.drag.currentDeltaX,
+          deltaY: state.drag.currentDeltaY,
+        },
+      }));
+
       hideElement(positionIndicator);
       overlayEl.style.cursor = 'default';
       state.drag = null;

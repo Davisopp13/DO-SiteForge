@@ -174,7 +174,7 @@ siteforge/
 
 ### Phase 1D: History & Polish
 
-- [ ] **Task 12: Undo/redo history**
+- [x] **Task 12: Undo/redo history**
   - Create `src/editor/history.ts` — manages an operation stack
   - Operations are: Move (element xpath, from position, to position), TextEdit (element xpath, old text, new text)
   - Cmd+Z / Ctrl+Z: undo — send reverse operation to bridge

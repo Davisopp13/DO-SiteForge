@@ -171,3 +171,22 @@
   - `formatPadding()` handles 1-4 value CSS shorthand correctly
   - `overlay.selectedElement` is accessible via the OverlayManager interface for re-reading after text edits
 ---
+
+## Iteration 12 - Task 12: Undo/redo history
+- Implemented `src/editor/history.ts` with `createHistory()` function
+- Operations tracked: Move (xpath, from/to delta) and TextEdit (xpath, oldText, newText)
+- Undo stack and redo stack with MAX_HISTORY=50 cap
+- Cmd+Z / Ctrl+Z for undo, Cmd+Shift+Z / Ctrl+Shift+Z for redo
+- Undo/redo buttons added to toolbar (below separator) with SVG icons, opacity indicates availability
+- Added `forge:undoRedoMove` and `forge:undoRedoText` bridge messages for applying reverse operations
+- Bridge handles undo/redo: sets transform for moves, sets textContent for text edits
+- Overlay dispatches `forge:dragStarted` and `forge:dragFinished` events for move history tracking
+- `app.ts` wires events to history.push() for both moves and text edits
+- Files changed: src/editor/history.ts, src/editor/app.ts, src/editor/overlay.ts, src/bridge/protocol.ts, src/bridge/bridge.ts, PRD.md
+- Learnings for future iterations:
+  - Bridge needs separate undo/redo messages because moves use cumulative transform deltas (not incremental)
+  - Overlay dispatches drag events with final delta — app.ts records in history
+  - Text edits already dispatched `forge:textEdited` from overlay — just needed to wire to history in app.ts
+  - Undo/redo keyboard shortcuts must check for text edit mode (same pattern as toolbar shortcuts)
+  - Redo stack cleared on new operations to maintain correct undo/redo semantics
+---

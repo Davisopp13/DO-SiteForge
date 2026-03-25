@@ -4,6 +4,7 @@ import { createCanvas } from './canvas.js';
 import { createOverlay } from './overlay.js';
 import { createToolbar } from './toolbar.js';
 import { createProperties } from './properties.js';
+import { createHistory } from './history.js';
 
 function init() {
   const toolbarEl = document.getElementById('sf-toolbar');
@@ -26,6 +27,47 @@ function init() {
 
   // Initialize properties panel
   const properties = createProperties(propertiesEl);
+
+  // Initialize history (undo/redo)
+  const history = createHistory(canvas);
+
+  // Listen for move completions to record in history
+  // Track pending drag state for history recording
+  let pendingMoveXPath: string | null = null;
+  let pendingMoveDelta = { x: 0, y: 0 };
+
+  window.addEventListener('forge:dragStarted', ((e: CustomEvent) => {
+    pendingMoveXPath = e.detail?.xpath || null;
+    pendingMoveDelta = { x: 0, y: 0 };
+  }) as EventListener);
+
+  window.addEventListener('forge:dragFinished', ((e: CustomEvent) => {
+    const { xpath, deltaX, deltaY } = e.detail || {};
+    if (xpath && (deltaX !== 0 || deltaY !== 0)) {
+      history.push({
+        type: 'move',
+        xpath,
+        fromDeltaX: 0,
+        fromDeltaY: 0,
+        toDeltaX: deltaX,
+        toDeltaY: deltaY,
+      });
+    }
+    pendingMoveXPath = null;
+  }) as EventListener);
+
+  // Listen for text edits to record in history
+  window.addEventListener('forge:textEdited', ((e: CustomEvent) => {
+    const { xpath, oldText, newText } = e.detail || {};
+    if (xpath && oldText !== newText) {
+      history.push({
+        type: 'textEdit',
+        xpath,
+        oldText,
+        newText,
+      });
+    }
+  }) as EventListener);
 
   // Listen for selection changes to update properties panel
   window.addEventListener('forge:selectionChanged', ((e: CustomEvent) => {

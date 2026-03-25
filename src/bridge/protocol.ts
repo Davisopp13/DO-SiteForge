@@ -68,6 +68,19 @@ export interface TextEditEndMessage {
   xpath: string;
 }
 
+export interface UndoRedoMoveMessage {
+  type: 'forge:undoRedoMove';
+  xpath: string;
+  deltaX: number;
+  deltaY: number;
+}
+
+export interface UndoRedoTextMessage {
+  type: 'forge:undoRedoText';
+  xpath: string;
+  text: string;
+}
+
 export type EditorToBridgeMessage =
   | GetElementAtPointMessage
   | GetElementByXPathMessage
@@ -75,7 +88,9 @@ export type EditorToBridgeMessage =
   | MoveMessage
   | FinishMoveMessage
   | TextEditStartMessage
-  | TextEditEndMessage;
+  | TextEditEndMessage
+  | UndoRedoMoveMessage
+  | UndoRedoTextMessage;
 
 // Messages from bridge -> editor
 export interface HoverMessage {

@@ -226,6 +226,40 @@
     (element as HTMLElement).blur();
   }
 
+  // --- Undo/Redo operations ---
+
+  function undoRedoMove(xpath: string, deltaX: number, deltaY: number) {
+    const element = getElementByXPath(xpath);
+    if (!element) return;
+
+    const htmlEl = element as HTMLElement;
+    if (deltaX === 0 && deltaY === 0) {
+      htmlEl.style.transform = '';
+    } else {
+      htmlEl.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    }
+
+    // Report updated position
+    const rect = element.getBoundingClientRect();
+    sendToEditor({
+      type: 'forge:moveComplete',
+      xpath,
+      finalRect: {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      },
+    });
+  }
+
+  function undoRedoSetText(xpath: string, text: string) {
+    const element = getElementByXPath(xpath);
+    if (!element) return;
+
+    (element as HTMLElement).textContent = text;
+  }
+
   // --- Communication ---
 
   function sendToEditor(message: any) {
@@ -287,6 +321,16 @@
 
       case 'forge:textEditEnd': {
         endTextEdit(data.xpath);
+        break;
+      }
+
+      case 'forge:undoRedoMove': {
+        undoRedoMove(data.xpath, data.deltaX, data.deltaY);
+        break;
+      }
+
+      case 'forge:undoRedoText': {
+        undoRedoSetText(data.xpath, data.text);
         break;
       }
     }
