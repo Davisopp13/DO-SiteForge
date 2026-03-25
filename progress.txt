@@ -786,3 +786,19 @@
   - View button fetches content lazily on click — avoids loading all file contents upfront
   - Direct write changes appended after finalizeAssistantMessage to appear below suggestion chips
 ---
+
+## Iteration 49 - Task 7 (Phase 2.5C): Adapt chat UI based on active provider
+- Sidebar now fetches `/api/ai/status` on init instead of `/api/config/status` to get full provider info
+- Added `AIStatus` interface tracking provider name, availability, and supportsDirectWrites
+- Provider badge shown on AI messages: "Claude Code" (blue accent) or "API" (muted) next to AI label
+- When Claude Code active (supportsDirectWrites: true): auto-apply toggle hidden, Apply button skipped in finalizeAssistantMessage
+- When Anthropic API active: full Apply changes + auto-apply flow preserved as before
+- When no provider: setup guide now includes Claude Code recommendation note with link
+- Added CSS: `.sf-provider-badge` (pill badge), `.sf-provider-badge-cc` (blue accent), `.sf-provider-badge-api` (muted), `.sf-setup-recommend` (blue-tinted recommendation box)
+- Files changed: src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `aiStatus` object tracks all provider state — single source of truth for UI adaptation
+  - Direct write file changes still rendered via `renderDirectWriteChanges()` (from Task 6) — only the Apply-button flow is gated
+  - Provider badge uses classList to switch between cc/api styles — no inline styles needed
+  - Setup guide recommendation uses `<a target="_blank">` for external link to Claude Code docs
+---

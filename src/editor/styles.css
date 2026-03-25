@@ -1162,3 +1162,40 @@ html, body {
   width: 100%;
   text-align: center;
 }
+
+/* Provider badge on AI messages */
+.sf-provider-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.sf-provider-badge-cc {
+  background: rgba(55, 138, 221, 0.12);
+  color: var(--sf-accent);
+}
+
+.sf-provider-badge-api {
+  background: var(--sf-overlay);
+  color: var(--sf-text-secondary);
+}
+
+/* Setup guide — Claude Code recommendation */
+.sf-setup-recommend {
+  background: rgba(55, 138, 221, 0.08);
+  border: 1px solid rgba(55, 138, 221, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 12px !important;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sf-setup-recommend a {
+  color: var(--sf-accent);
+  text-decoration: underline;
+}

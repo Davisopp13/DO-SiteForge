@@ -34,12 +34,19 @@ export interface SidebarManager {
 }
 
 
+interface AIStatus {
+  provider: string;       // 'claude-code' | 'anthropic-api' | 'disabled'
+  available: boolean;
+  supportsDirectWrites: boolean;
+}
+
 export function createSidebar(container: HTMLElement): SidebarManager {
   let activeTab: SidebarTab = 'chat';
   let selectedElement: ElementInfo | null = null;
   let isLoading = false;
   let autoApply = false;
   let aiEnabled = true; // assume enabled, will check on init
+  let aiStatus: AIStatus = { provider: 'anthropic-api', available: true, supportsDirectWrites: false };
   const messages: ChatMessage[] = [];
 
   // Create tab bar
@@ -98,8 +105,8 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     </svg>
     <h3 class="sf-setup-heading">Set up AI to get started</h3>
     <div class="sf-setup-steps">
-      <p>1. Get an API key from <strong>console.anthropic.com</strong></p>
-      <p>2. Set it via environment variable:</p>
+      <p class="sf-setup-recommend"><strong>Recommended:</strong> Install <a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank">Claude Code</a> for the best experience — no API key needed</p>
+      <p>Or set an API key from <strong>console.anthropic.com</strong>:</p>
       <pre class="sf-setup-code">export ANTHROPIC_API_KEY=sk-ant-...</pre>
       <p>Or paste it below to save to <code>~/.siteforge/config.json</code>:</p>
     </div>
@@ -539,6 +546,18 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       bubble.textContent = content;
       msgEl.appendChild(bubble);
     } else {
+      // Provider badge
+      const badgeEl = document.createElement('span');
+      badgeEl.className = 'sf-provider-badge';
+      if (aiStatus.provider === 'claude-code') {
+        badgeEl.textContent = 'Claude Code';
+        badgeEl.classList.add('sf-provider-badge-cc');
+      } else {
+        badgeEl.textContent = 'API';
+        badgeEl.classList.add('sf-provider-badge-api');
+      }
+      msgEl.appendChild(badgeEl);
+
       const bubble = document.createElement('div');
       bubble.className = 'sf-chat-bubble-ai';
       bubble.innerHTML = renderMarkdown(content);
@@ -639,8 +658,9 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     el.classList.add('sf-chat-msg-complete');
 
     // Parse file changes from the assistant's response
+    // Skip Apply-button flow when Claude Code writes files directly
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg && lastMsg.role === 'assistant') {
+    if (lastMsg && lastMsg.role === 'assistant' && !aiStatus.supportsDirectWrites) {
       const changes = parseFileChanges(lastMsg.content);
       if (changes.length > 0) {
         // Resolve isNew flags via API
@@ -721,13 +741,19 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   // Initialize with chat tab active
   switchTab('chat');
 
-  // Check if AI is enabled on init
-  fetch('/api/config/status')
+  // Check AI provider status on init
+  fetch('/api/ai/status')
     .then((res) => res.json())
-    .then((data: { aiEnabled?: boolean }) => {
-      aiEnabled = !!data.aiEnabled;
+    .then((data: AIStatus) => {
+      aiStatus = data;
+      aiEnabled = data.available;
       if (!aiEnabled) {
         deactivateChat();
+      } else {
+        // Hide auto-apply toggle for Claude Code (writes are automatic)
+        if (aiStatus.supportsDirectWrites) {
+          autoApplyRow.style.display = 'none';
+        }
       }
     })
     .catch(() => {

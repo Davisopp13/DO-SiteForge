@@ -106,7 +106,7 @@ src/
 
 ### Phase 2.5C: Frontend Adaptation
 
-- [ ] **Task 7: Adapt chat UI based on active provider**
+- [x] **Task 7: Adapt chat UI based on active provider**
   - On sidebar initialization, fetch `/api/ai/status` to determine which provider is active
   - If Claude Code provider (`supportsDirectWrites: true`):
     - Hide the "Apply changes" button on AI responses (files are already written)
