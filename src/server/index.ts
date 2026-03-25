@@ -11,6 +11,7 @@ import { scanProject, type ProjectContext } from './project.js';
 import { detectProviders, type AIProvider, type ProviderDetectionResult } from './providers/types.js';
 import { createClaudeCodeProvider } from './providers/claude-code.js';
 import { createAnthropicApiProvider } from './providers/anthropic-api.js';
+import { createFileWatcher } from './watcher.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,12 +45,18 @@ export function createServer(port = 3000, target?: ProxyTarget) {
     () => createAnthropicApiProvider(config)
   );
 
-  // Expose config, project context, project dir, and AI provider for route handlers
+  // Create file watcher for Claude Code direct-write detection
+  const fileWatcher = target?.projectDir
+    ? createFileWatcher(target.projectDir)
+    : null;
+
+  // Expose config, project context, project dir, AI provider, and watcher for route handlers
   app.locals.sfConfig = config;
   app.locals.sfProjectContext = projectContext;
   app.locals.sfProjectDir = target?.projectDir;
   app.locals.sfProvider = providers.active;
   app.locals.sfProviders = providers;
+  app.locals.sfFileWatcher = fileWatcher;
 
   // After tsup build: __dirname is dist/src/server/
   // Project root is 3 levels up from there

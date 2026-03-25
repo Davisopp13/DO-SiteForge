@@ -750,3 +750,22 @@
   - Provider re-detection on set-key ensures API key saved at runtime activates the anthropic-api provider
   - `GET /api/ai/status` returns `supportsDirectWrites` — frontend uses this to show/hide Apply button (Task 7)
 ---
+
+## Iteration 47 - Task 5 (Phase 2.5B): File watcher for direct writes
+- Created `src/server/watcher.ts` with `createFileWatcher()` function using chokidar
+- `FileWatcher` interface: `startWatching()`, `stopWatching()`, `getRecentChanges(since)`
+- `FileChange` type: `{ filepath, type: 'created' | 'modified' | 'deleted', timestamp }`
+- Ignores: node_modules, .git, dist, .next, .siteforge
+- `awaitWriteFinish` with 100ms stability threshold to avoid partial write detection
+- Watcher created in `server/index.ts`, stored in `app.locals.sfFileWatcher`
+- Chat route (`routes/chat.ts`) starts watcher before Claude Code session, stops after response completes
+- File changes collected and emitted as SSE `files` event after done event
+- Watcher also stopped in error handler to prevent leaks
+- Files created: src/server/watcher.ts
+- Files changed: src/server/index.ts, src/server/routes/chat.ts, PRD.md
+- Learnings for future iterations:
+  - Chokidar v5 exports `FSWatcher` as named export, not via namespace (no `chokidar.FSWatcher`)
+  - `persistent: false` prevents watcher from keeping the process alive
+  - `ignoreInitial: true` avoids emitting events for existing files on start
+  - Watcher lifecycle tied to chat sessions — start on request, stop after response/error
+---

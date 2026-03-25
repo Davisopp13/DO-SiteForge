@@ -2,6 +2,7 @@ import type { Request, Response, Router } from 'express';
 import { Router as createRouter } from 'express';
 import type { ChatMessage, PageContext } from '../ai.js';
 import type { AIProvider, ChatParams } from '../providers/types.js';
+import type { FileWatcher } from '../watcher.js';
 
 /**
  * POST /api/chat
@@ -42,6 +43,14 @@ export function createChatRouter(): Router {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
+    // Start file watcher for Claude Code sessions (direct writes)
+    const fileWatcher = req.app.locals.sfFileWatcher as FileWatcher | null;
+    const useWatcher = provider.supportsDirectFileWrites && fileWatcher;
+    const sessionStart = Date.now();
+    if (useWatcher) {
+      fileWatcher!.startWatching();
+    }
+
     try {
       const params: ChatParams = {
         message,
@@ -67,10 +76,23 @@ export function createChatRouter(): Router {
         }
       }
 
+      // Stop watcher and collect file changes after Claude Code response
+      if (useWatcher) {
+        fileWatcher!.stopWatching();
+        const changes = fileWatcher!.getRecentChanges(sessionStart);
+        if (changes.length > 0) {
+          res.write(`event: files\ndata: ${JSON.stringify({ changes })}\n\n`);
+        }
+      }
+
       // If the provider didn't explicitly yield a done event, send one
       res.write(`event: done\ndata: {}\n\n`);
       res.end();
     } catch (err) {
+      // Ensure watcher is stopped on error
+      if (useWatcher) {
+        fileWatcher!.stopWatching();
+      }
       const errorMessage = err instanceof Error ? err.message : String(err);
 
       if (res.headersSent) {

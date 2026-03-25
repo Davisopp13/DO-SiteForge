@@ -86,7 +86,7 @@ src/
 
 ### Phase 2.5B: File Change Detection for Claude Code Mode
 
-- [ ] **Task 5: File watcher for direct writes**
+- [x] **Task 5: File watcher for direct writes**
   - Create `src/server/watcher.ts` using chokidar to watch the project directory for file changes
   - Ignore: `node_modules/`, `.git/`, `dist/`, `.next/`, `.siteforge/`
   - When a file change is detected during an active Claude Code chat session: record the change as `{ filepath, type: 'created' | 'modified' | 'deleted', timestamp }`
