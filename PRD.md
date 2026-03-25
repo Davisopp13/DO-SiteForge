@@ -53,7 +53,7 @@ src/
   - Files to modify: `src/server/index.ts` (load config on startup)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 2: Claude API integration module**
+- [x] **Task 2: Claude API integration module**
   - Create `src/server/ai.ts` with a `streamChat()` function
   - Takes: messages array (role/content pairs), system prompt string, model string, maxTokens number
   - Calls Anthropic Messages API at `https://api.anthropic.com/v1/messages` with streaming enabled

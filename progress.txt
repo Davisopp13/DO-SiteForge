@@ -387,3 +387,20 @@
   - `loadJsonConfig` silently returns `{}` on parse errors — resilient to corrupted config files
   - Phase 2 tasks will use `app.locals.sfConfig` to get the API key in route handlers
 ---
+
+## Iteration 25 - Task 2: Claude API integration module
+- Created `src/server/ai.ts` with `streamChat()`, `buildSystemPrompt()`, and `createStreamOptions()` functions
+- `streamChat()` calls Anthropic Messages API with streaming, returns ReadableStream<string> of text deltas
+- Parses SSE events from Anthropic (content_block_delta → text_delta) via manual line-based parser
+- Error handling: 401→auth_error, 429→rate_limit, 5xx→server_error, network failures→network_error — all as typed AIError objects
+- `buildSystemPrompt()` assembles system prompt from base instructions + PageContext (selected element, viewport, page summary, project type)
+- `createStreamOptions()` convenience function wires config + context + messages into StreamChatOptions
+- No external dependencies added — uses native fetch() and ReadableStream
+- Files changed: src/server/ai.ts (new), PRD.md, progress.txt
+- Learnings for future iterations:
+  - Anthropic SSE format: `data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"..."}}`
+  - `anthropic-version: 2023-06-01` header required for all API calls
+  - ReadableStream<string> is the right abstraction — route handler can pipe to SSE response
+  - `satisfies AIError` gives type safety on thrown error objects without wrapping in a class
+  - PageContext types defined here will be reused by context.ts (editor-side) and chat.ts (route)
+---
