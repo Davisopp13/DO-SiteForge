@@ -23,6 +23,7 @@ interface OverlayState {
   hoveredElement: ElementInfo | null;
   selectedElement: ElementInfo | null;
   isTextEditing: boolean;
+  isTransitioning: boolean;
   pendingHoverRequest: boolean;
   drag: DragState | null;
   activeTool: string;
@@ -60,6 +61,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     hoveredElement: null,
     selectedElement: null,
     isTextEditing: false,
+    isTransitioning: false,
     pendingHoverRequest: false,
     drag: null,
     activeTool: 'select',
@@ -145,7 +147,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
   // Mouse events on overlay
   overlayEl.addEventListener('mousemove', (e: MouseEvent) => {
-    if (state.isTextEditing) return;
+    if (state.isTextEditing || state.isTransitioning) return;
 
     // Handle drag in progress
     if (state.drag) {
@@ -199,7 +201,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   });
 
   overlayEl.addEventListener('mousedown', (e: MouseEvent) => {
-    if (state.isTextEditing) return;
+    if (state.isTextEditing || state.isTransitioning) return;
 
     // Start drag if clicking on a selected element
     if (state.selectedElement && state.hoveredElement &&
@@ -377,11 +379,33 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     handleSelect(null);
   });
 
-  // Listen for viewport changes — deselect and clear highlights
-  window.addEventListener('forge:viewport-changed', () => {
+  // Listen for viewport transition start — ignore hover requests during animation
+  window.addEventListener('forge:viewport-transitioning', () => {
+    // Exit text edit mode if active
+    if (state.isTextEditing && state.selectedElement) {
+      canvas.sendToBridge({
+        type: 'forge:textEditEnd',
+        xpath: state.selectedElement.xpath,
+      });
+    }
+    // Deselect and clear everything immediately
     handleSelect(null);
     state.hoveredElement = null;
+    state.pendingHoverRequest = false;
     drawHoverHighlight(null);
+    // Block hover requests during transition — coordinates are changing
+    state.isTransitioning = true;
+  });
+
+  // Listen for viewport changes — transition is complete, re-enable interactions
+  window.addEventListener('forge:viewport-changed', () => {
+    // Ensure clean state after reflow
+    handleSelect(null);
+    state.hoveredElement = null;
+    state.pendingHoverRequest = false;
+    drawHoverHighlight(null);
+    // Re-enable hover requests now that layout is stable
+    state.isTransitioning = false;
   });
 
   // --- Drawing functions ---

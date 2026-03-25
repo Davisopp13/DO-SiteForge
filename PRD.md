@@ -245,7 +245,7 @@ siteforge/
   - Update the dimensions display in the viewport bar as the slider moves
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 20: Overlay recalculation on viewport change**
+- [x] **Task 20: Overlay recalculation on viewport change**
   - When `forge:viewport-changed` fires, the overlay must: deselect any currently selected element (selection rects will be in wrong positions), re-query the bridge for the DOM layout at the new viewport width, redraw any hover highlights at correct positions
   - The bridge script must handle viewport changes gracefully — elements queried via `getElementAtPoint()` must return correct bounding rects relative to the new iframe width
   - If the user re-selects an element after a viewport change, the selection box and resize handles must match the element's new position and size in the reflowed layout

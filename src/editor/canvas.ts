@@ -86,13 +86,27 @@ export function createCanvas(canvasEl: HTMLElement): CanvasManager {
       deviceFrame.style.maxWidth = '100%';
     }
 
-    // Dispatch event for overlay to recalculate positions
-    // Use requestAnimationFrame to wait for CSS transition to start
-    requestAnimationFrame(() => {
+    // Signal that viewport transition has started (overlay should ignore hovers)
+    window.dispatchEvent(new CustomEvent('forge:viewport-transitioning'));
+
+    // Wait for the CSS transition to finish before signaling the overlay
+    // The device frame has a 0.4s transition on width
+    const onTransitionEnd = () => {
+      deviceFrame.removeEventListener('transitionend', onTransitionEnd);
       window.dispatchEvent(new CustomEvent('forge:viewport-changed', {
         detail: { preset, width },
       }));
-    });
+    };
+    deviceFrame.addEventListener('transitionend', onTransitionEnd);
+
+    // Fallback: if no transition fires (e.g., same width or transitions disabled),
+    // dispatch after 500ms to avoid getting stuck
+    setTimeout(() => {
+      deviceFrame.removeEventListener('transitionend', onTransitionEnd);
+      window.dispatchEvent(new CustomEvent('forge:viewport-changed', {
+        detail: { preset, width },
+      }));
+    }, 500);
   }) as EventListener);
 
   return {

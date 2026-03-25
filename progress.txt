@@ -293,3 +293,36 @@
   - Device frame uses `flex-shrink: 0` to prevent flexbox from shrinking it below the set width
   - `requestAnimationFrame` before dispatching `forge:viewport-changed` ensures CSS transition has started
 ---
+
+## Iteration 19 - Task 19: Custom width slider
+- When Custom viewport is selected, a slider bar appears below the viewport toggle bar (320px–1920px range)
+- Slider uses `input` event (not `change`) for real-time continuous updates — no debounce
+- During slider drag, `sf-no-transition` class added to device frame to prevent CSS transition lag
+- On mouseup/touchend, transition re-enabled for future preset switches
+- Slider value displayed in monospace next to slider
+- Dimensions display in viewport bar updates live as slider moves
+- Device frame category auto-detected from width: <640px=mobile, 640-1023px=tablet, 1024px+=desktop (reuses canvas.ts logic)
+- Slider bar hidden for non-custom presets via `display: none`
+- Files changed: src/editor/viewport.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `sf-no-transition` class was already defined in styles.css from Task 18 — just needed to apply it via JS
+  - Canvas.ts already handles device frame class switching for custom width — viewport.ts just dispatches the event
+  - Slider `insertAdjacentElement('afterend', sliderBar)` places it right after viewport bar in DOM order, which works with flex column layout
+  - Must sync slider.value when switching to custom preset to keep slider thumb in correct position
+---
+
+## Iteration 20 - Task 20: Overlay recalculation on viewport change
+- Enhanced viewport change handling with two-phase approach: `forge:viewport-transitioning` (start) and `forge:viewport-changed` (complete)
+- Canvas.ts now waits for CSS `transitionend` event before dispatching `forge:viewport-changed`, with 500ms fallback timeout
+- Added `isTransitioning` state to overlay — blocks mousemove, mousedown during viewport animation so stale coordinates aren't used
+- Overlay deselects and clears hover highlights immediately on transition start
+- Overlay re-enables interactions only after transition completes and layout is stable
+- Bridge's `getElementAtPoint()` already returns correct bounding rects after reflow — no changes needed
+- Re-selection after viewport change works correctly because `toOverlayCoords` uses live `iframe.getBoundingClientRect()`
+- Files changed: src/editor/canvas.ts, src/editor/overlay.ts, PRD.md
+- Learnings for future iterations:
+  - `transitionend` fires once per animated property — listener must be removed after first call to avoid double-dispatch
+  - Fallback timeout needed because `transitionend` won't fire if width doesn't actually change or transitions are disabled (sf-no-transition class)
+  - Two-event pattern (transitioning → changed) cleanly separates "stop interactions" from "resume interactions"
+  - Bridge needs no changes for viewport resize — `document.elementFromPoint()` and `getBoundingClientRect()` naturally return layout-correct values after reflow
+---
