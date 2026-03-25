@@ -520,3 +520,19 @@
   - Messages stored in-memory array for conversation history (used by future Task 11/12 for sending to API)
   - scrollToBottom uses requestAnimationFrame to ensure DOM has updated before scrolling
 ---
+
+## Iteration 33 - Task 10: Markdown renderer
+- Created `src/editor/markdown.ts` with `renderMarkdown()` function — self-contained, no external deps
+- Supports: headings (h1-h6), bold (**), italic (*), bold+italic (***), inline code (`), fenced code blocks (``` with language), unordered lists (- * +), ordered lists (1.), links, paragraphs, horizontal rules
+- Code blocks: wrapped in `<pre><code>` with language class, filename header + Copy button for file paths
+- Sanitization: strips `<script>` tags, event handler attributes, javascript: URLs
+- Inline rendering handles backtick code before bold/italic to avoid conflicts
+- Updated sidebar.ts to import `renderMarkdown` from markdown.ts, removed inline `renderBasicMarkdown` and `escapeHtml`
+- CSS for code blocks, inline code, headers, and copy buttons already existed from Task 9
+- Files changed: src/editor/markdown.ts (new), src/editor/sidebar.ts
+- Learnings for future iterations:
+  - Code block header shown for any fenced block with a language identifier (file path or language name)
+  - Copy button uses `data-code` attribute — click handler to be wired in Task 12 (SSE stream handling)
+  - Paragraph collector must check for all block-level markers to avoid swallowing headings/lists
+  - Sanitize runs last on the final HTML to catch any injections from the markdown content
+---

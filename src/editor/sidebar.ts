@@ -2,6 +2,7 @@
 
 import type { ElementInfo } from '../bridge/protocol.js';
 import { createProperties, type PropertiesManager } from './properties.js';
+import { renderMarkdown } from './markdown.js';
 
 export type SidebarTab = 'chat' | 'properties';
 
@@ -25,21 +26,6 @@ export interface SidebarManager {
   isLoading: boolean;
 }
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** Lightweight markdown-to-HTML for AI messages (inline only — full renderer in Task 10) */
-function renderBasicMarkdown(text: string): string {
-  // For now, just escape HTML and preserve line breaks.
-  // Full markdown renderer will be built in Task 10 and wired in Task 12.
-  const escaped = escapeHtml(text);
-  return escaped.replace(/\n/g, '<br>');
-}
 
 export function createSidebar(container: HTMLElement): SidebarManager {
   let activeTab: SidebarTab = 'chat';
@@ -155,7 +141,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     } else {
       const bubble = document.createElement('div');
       bubble.className = 'sf-chat-bubble-ai';
-      bubble.innerHTML = renderBasicMarkdown(content);
+      bubble.innerHTML = renderMarkdown(content);
       msgEl.appendChild(bubble);
     }
 
@@ -173,7 +159,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   function updateAssistantMessage(el: HTMLElement, content: string): void {
     const bubble = el.querySelector('.sf-chat-bubble-ai');
     if (bubble) {
-      bubble.innerHTML = renderBasicMarkdown(content);
+      bubble.innerHTML = renderMarkdown(content);
     }
     // Update stored message content
     const idx = messages.length - 1;

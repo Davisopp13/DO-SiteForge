@@ -140,7 +140,7 @@ src/
   - Files to modify: `src/editor/sidebar.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 10: Markdown renderer**
+- [x] **Task 10: Markdown renderer**
   - Create `src/editor/markdown.ts` — lightweight markdown-to-HTML converter
   - Support: headings (##), bold (**), italic (*), inline code (`), fenced code blocks (``` with language), unordered lists (-), ordered lists (1.), links, paragraphs
   - Code blocks: wrap in `<pre><code>` with syntax highlighting class based on language fence
