@@ -689,3 +689,19 @@
   - The full AI chat flow: select element → type message → context serialized → POST /api/chat → SSE stream → markdown rendered → file changes parsed → apply writes files → HMR updates canvas
   - No external markdown library needed — self-contained regex parser handles Claude's output subset
 ---
+
+## Iteration 43 - Task 1 (Phase 2.5A): AIProvider interface and detection
+- Created `src/server/providers/types.ts` with `AIProvider` interface, `ChatParams`, `ChatEvent` types
+- `AIProvider`: name, available, supportsDirectFileWrites, streamChat(params) → AsyncIterable<ChatEvent>
+- `ChatEvent`: type is 'delta' | 'done' | 'error' | 'file_changed' with data payload
+- `detectProviders()` accepts config + optional factory functions, returns { preferred, fallback, active }
+- `isClaudeCodeAvailable()` checks PATH via `which claude` with caching for process lifetime
+- `disabledProvider` placeholder yields error event when no provider available
+- Priority: Claude Code (if in PATH) > Anthropic API (if key set) > disabled
+- Files created: src/server/providers/types.ts
+- Learnings for future iterations:
+  - Provider factories passed to detectProviders() avoids circular imports — types.ts doesn't import concrete providers
+  - `execSync('which claude', { stdio: 'ignore' })` throws on not-found — try/catch is the detection pattern
+  - AsyncIterable<ChatEvent> (async generator) is the right abstraction for streaming chat — simpler than ReadableStream for consumers
+  - Caching `isClaudeCodeAvailable` avoids repeated subprocess spawns
+---
