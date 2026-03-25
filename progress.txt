@@ -705,3 +705,18 @@
   - AsyncIterable<ChatEvent> (async generator) is the right abstraction for streaming chat — simpler than ReadableStream for consumers
   - Caching `isClaudeCodeAvailable` avoids repeated subprocess spawns
 ---
+
+## Iteration 44 - Task 2 (Phase 2.5A): Refactor existing API integration into Anthropic API provider
+- Created `src/server/providers/anthropic-api.ts` implementing `AIProvider` interface
+- `createAnthropicApiProvider(config)` returns an AIProvider with `name: 'anthropic-api'`, `available` based on hasApiKey, `supportsDirectFileWrites: false`
+- `streamChat()` is an async generator yielding `ChatEvent` objects (delta/done/error) — adapted from the ReadableStream pattern in ai.ts
+- Builds system prompt via shared `buildSystemPrompt()` from ai.ts, assembles conversation history same as chat.ts
+- Error handling mirrors ai.ts: 401→auth_error, 429→rate_limit, 5xx→server_error, network→network_error
+- Kept `src/server/ai.ts` unchanged — it still exports `streamChat()`, `buildSystemPrompt()`, types for backward compatibility with chat.ts (Task 4 will update chat.ts to use provider abstraction)
+- Files created: src/server/providers/anthropic-api.ts
+- Learnings for future iterations:
+  - async generator (`async *streamChat`) is cleaner than ReadableStream for the provider interface — no controller/reader boilerplate
+  - anthropic-api.ts imports `buildSystemPrompt` from ai.ts to reuse shared system prompt logic
+  - ai.ts kept as-is for backward compat — chat.ts still imports directly from it until Task 4 rewires
+  - Provider takes full SiteForgeConfig in constructor rather than individual fields for flexibility
+---

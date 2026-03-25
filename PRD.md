@@ -51,7 +51,7 @@ src/
   - Files to create: `src/server/providers/types.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 2: Refactor existing API integration into Anthropic API provider**
+- [x] **Task 2: Refactor existing API integration into Anthropic API provider**
   - Move the existing Claude API logic from `src/server/ai.ts` into `src/server/providers/anthropic-api.ts`
   - Implement the `AIProvider` interface: `name: 'anthropic-api'`, `available` based on API key being set, `supportsDirectFileWrites: false`
   - `streamChat()` wraps the existing `streamChat()` function, yielding `ChatEvent` objects from the SSE stream
