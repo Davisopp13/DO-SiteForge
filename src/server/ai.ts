@@ -31,6 +31,11 @@ export interface PageContext {
     childCount?: number;
   }>;
   projectType?: string;
+  rootDir?: string;
+  framework?: string;
+  hasTailwind?: boolean;
+  hasTypeScript?: boolean;
+  mainFiles?: string[];
 }
 
 export interface StreamChatOptions {
@@ -51,26 +56,84 @@ export interface AIError {
 
 const BASE_SYSTEM_PROMPT = `You are a web development assistant inside DO SiteForge, a visual website builder. Your role is to help users modify their websites by generating code changes.
 
+When the user references "this element", "the selected element", or similar, it refers to the element described in the Current Context section below.
+
 Guidelines:
-- When the user references "this element" or "the selected element", it refers to the element described in the context below.
-- Respond with specific file changes when asked to modify the site.
-- Use the project's existing patterns (Tailwind if detected, CSS modules if present, etc.).
-- Format file changes as markdown code blocks with the filepath as the language identifier, e.g.:
+- Respond with specific file changes when asked to modify the site. Always include the complete updated file content, not just the changed lines.
+- Format file changes as markdown code blocks with the filepath as the language identifier:
 \`\`\`src/components/Hero.tsx
-// file content here
+// complete file content here
 \`\`\`
-- Be concise — code first, brief explanation after.
-- If the user asks a question (not a change request), answer directly without generating file changes.`;
+- Be concise — put code first, then a brief explanation of what changed and why.
+- If the user asks a question (not a change request), answer directly without generating file changes.
+- If the user's request is ambiguous, make a reasonable choice and explain it rather than asking clarifying questions.
+- When multiple files need changes, show all of them in order of dependency (shared utilities first, then components, then pages).`;
+
+function buildFrameworkGuidelines(context?: PageContext): string {
+  if (!context) return '';
+
+  const lines: string[] = [];
+
+  // Framework-specific instructions
+  const fw = context.framework || context.projectType;
+  if (fw) {
+    switch (fw) {
+      case 'nextjs':
+        lines.push('This is a Next.js project. Use the App Router patterns (server components by default, "use client" only when needed). Use next/image for images and next/link for navigation.');
+        break;
+      case 'vite':
+        lines.push('This is a Vite project. Use ES module imports and the project\'s configured framework (React, Vue, Svelte, etc.).');
+        break;
+      case 'astro':
+        lines.push('This is an Astro project. Use .astro components by default, with framework islands for interactive parts.');
+        break;
+      case 'static':
+        lines.push('This is a static HTML/CSS/JS site. Use plain HTML, CSS, and vanilla JavaScript. No build step or framework.');
+        break;
+    }
+  }
+
+  // Styling approach
+  if (context.hasTailwind) {
+    lines.push('This project uses Tailwind CSS. Use Tailwind utility classes for styling instead of custom CSS.');
+  }
+
+  // TypeScript
+  if (context.hasTypeScript) {
+    lines.push('This project uses TypeScript. Include proper types in all code.');
+  }
+
+  if (lines.length === 0) return '';
+  return '\n\nProject-specific guidelines:\n- ' + lines.join('\n- ');
+}
 
 export function buildSystemPrompt(context?: PageContext): string {
   let prompt = BASE_SYSTEM_PROMPT;
+
+  // Add framework-specific guidelines
+  prompt += buildFrameworkGuidelines(context);
 
   if (!context) return prompt;
 
   const parts: string[] = [];
 
-  if (context.projectType) {
-    parts.push(`Project type: ${context.projectType}`);
+  // Project info
+  if (context.projectType || context.framework) {
+    const type = context.framework || context.projectType;
+    let projectLine = `Project: ${type}`;
+    if (context.rootDir) projectLine += ` (root: ${context.rootDir})`;
+    parts.push(projectLine);
+  }
+
+  if (context.hasTailwind !== undefined || context.hasTypeScript !== undefined) {
+    const features: string[] = [];
+    if (context.hasTailwind) features.push('Tailwind CSS');
+    if (context.hasTypeScript) features.push('TypeScript');
+    if (features.length > 0) parts.push(`Stack: ${features.join(', ')}`);
+  }
+
+  if (context.mainFiles && context.mainFiles.length > 0) {
+    parts.push(`Key files: ${context.mainFiles.join(', ')}`);
   }
 
   if (context.viewport) {
@@ -81,6 +144,7 @@ export function buildSystemPrompt(context?: PageContext): string {
     parts.push(`Current page: ${context.url}`);
   }
 
+  // Selected element — detailed
   if (context.selectedElement) {
     const el = context.selectedElement;
     const elParts: string[] = [`Tag: <${el.tag}>`];
@@ -90,15 +154,17 @@ export function buildSystemPrompt(context?: PageContext): string {
     if (el.textContent) elParts.push(`Text: "${el.textContent}"`);
     if (el.parentTag) elParts.push(`Parent: <${el.parentTag}>${el.parentClass ? '.' + el.parentClass : ''}`);
     if (el.childCount !== undefined) elParts.push(`Children: ${el.childCount}`);
+    if (el.siblingCount !== undefined) elParts.push(`Siblings: ${el.siblingCount}`);
     if (el.styles && Object.keys(el.styles).length > 0) {
       const styleStr = Object.entries(el.styles)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ');
-      elParts.push(`Styles: ${styleStr}`);
+      elParts.push(`Computed styles: ${styleStr}`);
     }
     parts.push(`Selected element:\n  ${elParts.join('\n  ')}`);
   }
 
+  // Page structure summary
   if (context.pageSummary && context.pageSummary.length > 0) {
     const summaryLines = context.pageSummary.map((s) => {
       let line = `<${s.tag}>`;
@@ -106,6 +172,7 @@ export function buildSystemPrompt(context?: PageContext): string {
       if (s.id) line += `#${s.id}`;
       if (s.role) line += ` (${s.role})`;
       if (s.textPreview) line += ` — "${s.textPreview}"`;
+      if (s.childCount !== undefined) line += ` [${s.childCount} children]`;
       return line;
     });
     parts.push(`Page structure:\n  ${summaryLines.join('\n  ')}`);
@@ -116,6 +183,30 @@ export function buildSystemPrompt(context?: PageContext): string {
   }
 
   return prompt;
+}
+
+/**
+ * Formats a PageContext object into a human-readable string.
+ * Used for logging/debugging — the system prompt uses buildSystemPrompt() instead.
+ */
+export function formatContextSummary(context: PageContext): string {
+  const lines: string[] = [];
+
+  if (context.projectType) lines.push(`Project: ${context.projectType}`);
+  if (context.viewport) lines.push(`Viewport: ${context.viewport.width}px ${context.viewport.mode}`);
+  if (context.url) lines.push(`Page: ${context.url}`);
+  if (context.selectedElement) {
+    const el = context.selectedElement;
+    let sel = `<${el.tag}>`;
+    if (el.className) sel += `.${el.className.split(' ')[0]}`;
+    if (el.id) sel += `#${el.id}`;
+    lines.push(`Selected: ${sel}`);
+  } else {
+    lines.push('Selected: none');
+  }
+  if (context.pageSummary) lines.push(`Sections: ${context.pageSummary.length}`);
+
+  return lines.join(' | ');
 }
 
 // --- Streaming Chat ---

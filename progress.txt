@@ -422,3 +422,17 @@
   - Error handling has two paths: pre-headers (JSON 500) and post-headers (SSE error event)
   - `app.use('/api/chat', router)` with `router.post('/')` = POST /api/chat
 ---
+
+## Iteration 27 - Task 4: System prompt and context formatting
+- Enhanced system prompt with framework-specific guidelines (Next.js, Vite, Astro, static)
+- Added `buildFrameworkGuidelines()` helper that generates project-aware instructions (Tailwind, TypeScript, framework patterns)
+- Extended `PageContext` with `rootDir`, `framework`, `hasTailwind`, `hasTypeScript`, `mainFiles` fields
+- System prompt now includes project root, stack features, key files, sibling count, and child count in page summary
+- Added `formatContextSummary()` utility for logging/debugging context
+- Files changed: src/server/ai.ts
+- Learnings for future iterations:
+  - `PageContext` extended fields will be populated by Task 7 (project.ts) and Task 5/6 (context.ts)
+  - Framework guidelines use switch/case on project type — easy to extend for new frameworks
+  - System prompt stays under ~800 tokens even with full context by keeping each section compact
+  - `formatContextSummary()` gives a one-line view useful for server logs
+---

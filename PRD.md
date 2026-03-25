@@ -74,7 +74,7 @@ src/
   - Files to modify: `src/server/index.ts` (register route, pass config)
   - Test: `npx tsc --noEmit` passes. `curl -X POST localhost:3000/api/chat -H "Content-Type: application/json" -d '{"message":"hello","context":{},"history":[]}' ` returns SSE stream (or error if no API key)
 
-- [ ] **Task 4: System prompt and context formatting**
+- [x] **Task 4: System prompt and context formatting**
   - In `src/server/ai.ts`, build a detailed system prompt that tells Claude:
     - It's inside DO SiteForge, a visual website builder
     - The current project type (Next.js, Vite, static, etc.) and root directory
