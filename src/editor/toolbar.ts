@@ -1,6 +1,6 @@
-// Toolbar — left toolbar with tool switching (Select, Move, Text, Add)
+// Toolbar — left toolbar with tool switching (Select, Text, Add)
 
-export type ToolType = 'select' | 'move' | 'text' | 'add';
+export type ToolType = 'select' | 'text' | 'add';
 
 export interface ToolbarManager {
   activeTool: ToolType;
@@ -11,13 +11,6 @@ export interface ToolbarManager {
 const ICONS: Record<ToolType, string> = {
   select: `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 2 L4 14 L7.5 10.5 L11 15 L13 14 L9.5 9.5 L14 9 Z"/>
-  </svg>`,
-  move: `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 2 L9 16 M2 9 L16 9"/>
-    <path d="M9 2 L7 4.5 M9 2 L11 4.5"/>
-    <path d="M9 16 L7 13.5 M9 16 L11 13.5"/>
-    <path d="M2 9 L4.5 7 M2 9 L4.5 11"/>
-    <path d="M16 9 L13.5 7 M16 9 L13.5 11"/>
   </svg>`,
   text: `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 4 L14 4"/>
@@ -32,14 +25,12 @@ const ICONS: Record<ToolType, string> = {
 
 const TOOL_LABELS: Record<ToolType, string> = {
   select: 'Select',
-  move: 'Move',
   text: 'Text',
   add: 'Add',
 };
 
 const TOOL_SHORTCUTS: Record<string, ToolType> = {
   v: 'select',
-  m: 'move',
   t: 'text',
   a: 'add',
 };
@@ -49,7 +40,7 @@ export function createToolbar(toolbarEl: HTMLElement): ToolbarManager {
   const buttons: Map<ToolType, HTMLButtonElement> = new Map();
 
   // Create tool buttons
-  const tools: ToolType[] = ['select', 'move', 'text', 'add'];
+  const tools: ToolType[] = ['select', 'text', 'add'];
   for (const tool of tools) {
     const btn = document.createElement('button');
     btn.className = 'sf-tool-btn';

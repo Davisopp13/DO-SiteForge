@@ -19,7 +19,7 @@ interface KeyboardDeps {
 
 const TOOL_SHORTCUTS: Record<string, ToolType> = {
   v: 'select',
-  m: 'move',
+  m: 'select', // M is an alias for V (select)
   t: 'text',
   a: 'add',
 };

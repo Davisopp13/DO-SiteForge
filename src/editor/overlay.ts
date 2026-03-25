@@ -79,6 +79,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           state.pendingHoverRequest = false;
           state.hoveredElement = data.element;
           drawHoverHighlight(data.element);
+          updateCursor();
         }
         break;
       }
@@ -134,15 +135,26 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     }
   });
 
-  // Listen for tool changes
-  window.addEventListener('forge:toolChanged', ((e: CustomEvent) => {
-    state.activeTool = e.detail?.tool || 'select';
-    // Change cursor based on tool
-    if (state.activeTool === 'add') {
+  // Update cursor based on current state
+  function updateCursor() {
+    if (state.drag) {
+      overlayEl.style.cursor = 'grabbing';
+    } else if (state.activeTool === 'add') {
       overlayEl.style.cursor = 'crosshair';
+    } else if (
+      state.hoveredElement && state.selectedElement &&
+      state.hoveredElement.xpath === state.selectedElement.xpath
+    ) {
+      overlayEl.style.cursor = 'grab';
     } else {
       overlayEl.style.cursor = 'default';
     }
+  }
+
+  // Listen for tool changes
+  window.addEventListener('forge:toolChanged', ((e: CustomEvent) => {
+    state.activeTool = e.detail?.tool || 'select';
+    updateCursor();
   }) as EventListener);
 
   // Mouse events on overlay
@@ -215,7 +227,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         currentDeltaY: 0,
         elementXPath: state.selectedElement.xpath,
       };
-      overlayEl.style.cursor = 'grabbing';
+      updateCursor();
 
       // Dispatch drag start for history tracking
       window.dispatchEvent(new CustomEvent('forge:dragStarted', {
@@ -242,8 +254,8 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       }));
 
       hideElement(positionIndicator);
-      overlayEl.style.cursor = 'default';
       state.drag = null;
+      updateCursor();
       return;
     }
 
@@ -305,8 +317,8 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       }));
 
       hideElement(positionIndicator);
-      overlayEl.style.cursor = 'default';
       state.drag = null;
+      updateCursor();
     }
     state.hoveredElement = null;
     drawHoverHighlight(null);
@@ -345,7 +357,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
     // Re-enable overlay pointer-events
     overlayEl.style.pointerEvents = 'auto';
-    overlayEl.style.cursor = 'default';
+    updateCursor();
 
     // Hide "Editing text" indicator
     hideElement(textEditIndicator);
