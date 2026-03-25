@@ -343,6 +343,20 @@
   - ToolType change in toolbar.ts propagates to keyboard.ts via import — both must be updated
 ---
 
+## Iteration 23 - Patch 3: Fix mode badge overlapping viewport bar
+- Removed absolutely-positioned mode badge from canvas area (was in toolbar.ts as DOM element appended to #sf-canvas)
+- Moved mode badge into viewport bar as first child, with a spacer (flex:1) pushing buttons to the right
+- Layout: [mode badge] — [spacer] — [Mobile][Tablet][Desktop][Custom] — [dimensions]
+- Changed toolbar.ts to dispatch forge:modeBadgeUpdate event instead of directly manipulating DOM
+- viewport.ts creates the badge element and listens for forge:modeBadgeUpdate to update text and styles
+- Added .sf-mode-badge CSS class (11px monospace, pill-shaped, non-interactive) and .sf-viewport-spacer (flex:1) to styles.css
+- Files changed: src/editor/toolbar.ts, src/editor/viewport.ts, src/editor/styles.css
+- Learnings for future iterations:
+  - Event-based decoupling (forge:modeBadgeUpdate) lets toolbar own the logic while viewport owns the DOM element
+  - No circular import needed — toolbar dispatches, viewport listens; initialization order doesn't matter since badge starts with 'Select mode' default text
+  - Removing inline cssText from old badge and using a CSS class is cleaner for override support
+---
+
 ## Iteration 20 - Task 20: Overlay recalculation on viewport change
 - Enhanced viewport change handling with two-phase approach: `forge:viewport-transitioning` (start) and `forge:viewport-changed` (complete)
 - Canvas.ts now waits for CSS `transitionend` event before dispatching `forge:viewport-changed`, with 500ms fallback timeout
@@ -357,4 +371,19 @@
   - Fallback timeout needed because `transitionend` won't fire if width doesn't actually change or transitions are disabled (sf-no-transition class)
   - Two-event pattern (transitioning → changed) cleanly separates "stop interactions" from "resume interactions"
   - Bridge needs no changes for viewport resize — `document.elementFromPoint()` and `getBoundingClientRect()` naturally return layout-correct values after reflow
+---
+
+## Iteration 24 - Task 1: Config and API key management
+- Created `src/server/config.ts` with `loadConfig()`, `setApiKey()`, and `hasApiKey()` functions
+- Config priority: env var > project siteforge.config.json > global ~/.siteforge/config.json
+- Schema: `{ anthropicApiKey?, model?, maxTokens? }` with defaults (claude-sonnet-4-20250514, 4096)
+- `setApiKey()` writes to `~/.siteforge/config.json` (creates dir if needed)
+- Updated `src/server/index.ts` to load config on startup, expose via `app.locals.sfConfig`, added `/api/config/status` endpoint
+- Updated `src/cli/commands/open.ts` to show AI status in startup message and print warning if no API key
+- Files changed: src/server/config.ts (new), src/server/index.ts, src/cli/commands/open.ts
+- Learnings for future iterations:
+  - `app.locals.sfConfig` stores config accessible to all route handlers
+  - `/api/config/status` returns `{ aiEnabled, model }` for the editor frontend to check AI state
+  - `loadJsonConfig` silently returns `{}` on parse errors — resilient to corrupted config files
+  - Phase 2 tasks will use `app.locals.sfConfig` to get the API key in route handlers
 ---

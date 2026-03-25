@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBridgeInjector } from './inject.js';
 import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
+import { loadConfig, hasApiKey, type SiteForgeConfig } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,12 @@ function findProjectRoot(startDir: string): string {
 
 export function createServer(port = 3000, target?: ProxyTarget) {
   const app = express();
+
+  // Load AI config (project dir from target, or undefined)
+  const config = loadConfig(target?.projectDir);
+
+  // Expose config for route handlers
+  app.locals.sfConfig = config;
 
   // After tsup build: __dirname is dist/src/server/
   // Project root is 3 levels up from there
@@ -50,6 +57,15 @@ export function createServer(port = 3000, target?: ProxyTarget) {
   // Serve the editor HTML shell at root
   app.get('/', (_req, res) => {
     res.sendFile(path.join(editorSrcDir, 'index.html'));
+  });
+
+  // API: Check AI config status
+  app.get('/api/config/status', (_req, res) => {
+    const cfg = app.locals.sfConfig as SiteForgeConfig;
+    res.json({
+      aiEnabled: hasApiKey(cfg),
+      model: cfg.model,
+    });
   });
 
   // Set up preview routes with bridge injection if a target project is provided
