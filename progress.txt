@@ -156,3 +156,18 @@
   - Mode badge tracks text edit mode via `forge:textEditModeChanged` event from overlay
   - Keyboard shortcuts check `modeBadge.textContent` to detect text editing state (avoids circular import)
 ---
+
+## Iteration 11 - Task 11: Right properties panel
+- Implemented `src/editor/properties.ts` with `createProperties()` function
+- Shows placeholder when no element selected, full property details when selected
+- Displays: tag+class header, Layout section (position, size), Style section (background with color swatch, font size, color with swatch, border radius), Spacing section (padding, margin)
+- "Ask AI" button at bottom, disabled/grayed out for Phase 2
+- Updated `src/editor/app.ts` to use `createProperties()` and wire `forge:selectionChanged`, `forge:elementMoved`, `forge:textEdited` events for live updates
+- Added CSS styles for properties sections, rows (label 11px muted above value 12px monospace), color swatches, Ask AI button
+- Files changed: src/editor/properties.ts, src/editor/app.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - Properties panel listens to custom events from overlay for live updates during drag/edit
+  - Color swatch is a small inline-block span with background set to the computed color
+  - `formatPadding()` handles 1-4 value CSS shorthand correctly
+  - `overlay.selectedElement` is accessible via the OverlayManager interface for re-reading after text edits
+---

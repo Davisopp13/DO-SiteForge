@@ -163,7 +163,7 @@ siteforge/
   - Add a separator line, then a "mode badge" at the top of the canvas area showing current mode ("Select mode", "Move mode", "Text edit mode")
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 11: Right properties panel**
+- [x] **Task 11: Right properties panel**
   - Create `src/editor/properties.ts` — renders the 240px-wide right panel
   - When no element is selected: show "Select an element to see its properties" placeholder
   - When an element is selected, show: Element tag + class name, Position (x, y relative to parent), Size (width x height), Background color (with a small color swatch), Font size and color, Padding and margin values, Border radius

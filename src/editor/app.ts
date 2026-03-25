@@ -3,13 +3,14 @@
 import { createCanvas } from './canvas.js';
 import { createOverlay } from './overlay.js';
 import { createToolbar } from './toolbar.js';
+import { createProperties } from './properties.js';
 
 function init() {
   const toolbarEl = document.getElementById('sf-toolbar');
   const canvasEl = document.getElementById('sf-canvas');
-  const properties = document.getElementById('sf-properties');
+  const propertiesEl = document.getElementById('sf-properties');
 
-  if (!toolbarEl || !canvasEl || !properties) {
+  if (!toolbarEl || !canvasEl || !propertiesEl) {
     console.error('SiteForge: Missing required DOM elements');
     return;
   }
@@ -23,41 +24,27 @@ function init() {
   // Initialize overlay for element interaction
   const overlay = createOverlay(canvasEl, canvas);
 
-  // Properties panel placeholder
-  properties.innerHTML = `
-    <div class="sf-properties-placeholder">
-      Select an element to see its properties
-    </div>
-  `;
+  // Initialize properties panel
+  const properties = createProperties(propertiesEl);
 
   // Listen for selection changes to update properties panel
   window.addEventListener('forge:selectionChanged', ((e: CustomEvent) => {
-    const element = e.detail?.element;
-    if (!element) {
-      properties.innerHTML = `
-        <div class="sf-properties-placeholder">
-          Select an element to see its properties
-        </div>
-      `;
-      return;
-    }
+    properties.update(e.detail?.element || null);
+  }) as EventListener);
 
-    properties.innerHTML = `
-      <div class="sf-properties-header">
-        <span class="sf-prop-tag">&lt;${element.tagName}&gt;</span>
-        ${element.className ? `<span class="sf-prop-class">.${element.className.split(' ')[0]}</span>` : ''}
-      </div>
-      <div class="sf-properties-section">
-        <div class="sf-prop-row">
-          <span class="sf-prop-label">Position</span>
-          <span class="sf-prop-value">${Math.round(element.boundingRect.x)}, ${Math.round(element.boundingRect.y)}</span>
-        </div>
-        <div class="sf-prop-row">
-          <span class="sf-prop-label">Size</span>
-          <span class="sf-prop-value">${Math.round(element.boundingRect.width)} × ${Math.round(element.boundingRect.height)}</span>
-        </div>
-      </div>
-    `;
+  // Listen for move updates to refresh properties panel live
+  window.addEventListener('forge:elementMoved', ((e: CustomEvent) => {
+    if (e.detail?.element) {
+      properties.update(e.detail.element);
+    }
+  }) as EventListener);
+
+  // Listen for text edits to refresh properties
+  window.addEventListener('forge:textEdited', ((e: CustomEvent) => {
+    // Re-select after text edit to update displayed text content
+    if (overlay.selectedElement) {
+      properties.update(overlay.selectedElement);
+    }
   }) as EventListener);
 
   console.log('SiteForge editor initialized');
