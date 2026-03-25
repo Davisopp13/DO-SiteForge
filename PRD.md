@@ -172,7 +172,7 @@ src/
 
 ### Phase 2D: File Change Detection & Display
 
-- [ ] **Task 13: Parse file changes from AI responses**
+- [x] **Task 13: Parse file changes from AI responses**
   - Create `src/editor/filechanges.ts` — parses Claude's responses for file change blocks
   - Detect markdown code fences with file paths as the language: ````src/components/Hero.tsx` → file change for `src/components/Hero.tsx`
   - Extract: filename, language (inferred from extension), and the code content

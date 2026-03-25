@@ -569,3 +569,17 @@
   - Debounce rendering at 50ms avoids excessive DOM updates during fast streaming
   - Retry button removes the error message, pops it from messages array, then resends last user message
 ---
+
+## Iteration 35 - Task 13: Parse file changes from AI responses
+- Created `src/editor/filechanges.ts` with `parseFileChanges()` and `resolveFileChanges()` functions
+- `parseFileChanges()` scans AI response text for fenced code blocks where info string is a file path (contains `/` or dot-extension)
+- `FileChange` type: `{ filepath, language, content, isNew }` — isNew defaults to false, resolved async
+- `resolveFileChanges()` checks each file against `/api/files/exists` endpoint (Task 14) and sets isNew flag
+- `inferLanguage()` maps file extensions to language names for syntax highlighting
+- `isFilePath()` distinguishes file paths from language names (e.g., `typescript` vs `src/app.ts`)
+- Files changed: src/editor/filechanges.ts (new), PRD.md, progress.txt
+- Learnings for future iterations:
+  - File path detection: contains `/` OR has dot-extension AND length > 4 (avoids matching short langs like `c.h`)
+  - `resolveFileChanges` depends on Task 14's `/api/files/exists` endpoint — will fail gracefully until that's built
+  - `parseFileChanges` is synchronous (string parsing only) — async resolution is separate step
+---
