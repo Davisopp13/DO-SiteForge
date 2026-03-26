@@ -6,8 +6,11 @@
   --sf-bg-secondary: #f5f5f5;
   --sf-bg-tertiary: #e8e8e8;
   --sf-border: #d4d4d4;
+  --sf-border-secondary: #d4d4d4;
+  --sf-border-tertiary: #e8e8e8;
   --sf-text-primary: #1a1a1a;
   --sf-text-secondary: #6b6b6b;
+  --sf-text-tertiary: #9a9a9a;
   --sf-accent: #378ADD;
   --sf-green: #3A7D44;
   --sf-danger: #e53e3e;
@@ -21,8 +24,11 @@
     --sf-bg-secondary: #242424;
     --sf-bg-tertiary: #2e2e2e;
     --sf-border: #3a3a3a;
+    --sf-border-secondary: #3a3a3a;
+    --sf-border-tertiary: #2e2e2e;
     --sf-text-primary: #e8e8e8;
     --sf-text-secondary: #9a9a9a;
+    --sf-text-tertiary: #6b6b6b;
     --sf-accent: #378ADD;
     --sf-green: #3A7D44;
     --sf-danger: #fc5c65;
@@ -1041,26 +1047,25 @@ html, body {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
-  padding: 0 4px;
+  justify-content: flex-start;
 }
 
 .sf-suggestion-chip {
-  padding: 4px 10px;
-  border: 1px solid var(--sf-border);
-  border-radius: 12px;
-  background: var(--sf-surface);
+  padding: 5px 12px;
+  border: 0.5px solid var(--sf-border-tertiary);
+  border-radius: 99px;
+  background: transparent;
   color: var(--sf-text-secondary);
   font-family: inherit;
   font-size: 11px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 150ms ease, border-color 150ms ease;
   white-space: nowrap;
 }
 
 .sf-suggestion-chip:hover {
-  background: rgba(55, 138, 221, 0.1);
-  color: var(--sf-accent);
-  border-color: var(--sf-accent);
+  background: var(--sf-bg-secondary);
+  border-color: var(--sf-border-secondary);
 }
 
 /* No-API-key setup guide */

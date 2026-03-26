@@ -635,7 +635,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     const existing = parentEl.querySelector('.sf-suggestion-chips');
     if (existing) existing.remove();
 
-    const chips = getSuggestionChips(content);
+    const chips = getSuggestionChips(content).slice(0, 3);
     if (chips.length === 0) return;
 
     const chipsContainer = document.createElement('div');

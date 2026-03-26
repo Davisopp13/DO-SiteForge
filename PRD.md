@@ -47,7 +47,7 @@ Two issues to fix: (1) Claude Code isn't writing files because it lacks permissi
   - Files to modify: `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Patch E: Suggestion chips cleanup**
+- [x] **Patch E: Suggestion chips cleanup**
   - Chips should be: 11px font, 5px 12px padding, border-radius 99px (full pill), 0.5px border --sf-border-tertiary, background transparent
   - Hover: background --sf-bg-secondary, border color --sf-border-secondary
   - Layout: flex-wrap, 6px gap, left-aligned (not centered), 8px margin-top from the AI message
