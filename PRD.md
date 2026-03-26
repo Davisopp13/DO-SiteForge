@@ -56,7 +56,7 @@ Two issues to fix: (1) Claude Code isn't writing files because it lacks permissi
   - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts` (if chip count needs limiting)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Patch F: Chat input area refinement**
+- [x] **Patch F: Chat input area refinement**
   - Input area container: 12px padding all around, border-top 0.5px solid --sf-border-tertiary, clean background (--sf-bg-primary)
   - Textarea: 13px font, 8px 12px padding, border-radius 8px, 0.5px border, min-height 36px, max-height 100px (roughly 4 lines), smooth auto-grow transition
   - Send button: 32px x 32px circle, --sf-green background, white arrow icon, 6px border-radius to make it a circle, vertically centered with textarea
@@ -66,7 +66,7 @@ Two issues to fix: (1) Claude Code isn't writing files because it lacks permissi
   - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts` (if DOM structure needs adjusting)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Patch G: Overall panel dimensions and spacing**
+- [x] **Patch G: Overall panel dimensions and spacing**
   - Right panel width: 340px (slight increase from 320px for breathing room)
   - Panel internal spacing: 0 horizontal padding on the panel itself (content items handle their own padding)
   - Chat messages area: 12px horizontal padding, scroll with 60px bottom padding so last message isn't flush against input

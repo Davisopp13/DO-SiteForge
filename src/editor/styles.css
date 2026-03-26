@@ -56,7 +56,7 @@ html, body {
 /* Three-panel grid layout */
 #sf-app {
   display: grid;
-  grid-template-columns: 44px 1fr 320px;
+  grid-template-columns: 44px 1fr 340px;
   grid-template-rows: 1fr;
   height: 100vh;
   width: 100vw;
@@ -155,7 +155,12 @@ html, body {
 .sf-sidebar-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 0;
+}
+
+/* Properties tab gets its own horizontal padding */
+.sf-props-content {
+  padding: 12px 14px;
 }
 
 /* Chat placeholder */
@@ -179,7 +184,7 @@ html, body {
 .sf-chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 12px 12px 60px;
   display: flex;
   flex-direction: column;
   gap: 12px;

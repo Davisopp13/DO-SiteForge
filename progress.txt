@@ -868,3 +868,42 @@
   - .sf-chat-msg-user + .sf-chat-msg-assistant selector adds extra spacing at user→AI transitions
   - rgba(58,125,68,0.08) is --sf-green at 8% opacity — consistent with --sf-green hex value
 ---
+
+## Iteration N - Patch E: Suggestion chips cleanup
+- Updated .sf-suggestion-chips: flex-wrap, 6px gap, justify-content: flex-start (left-aligned), 8px margin-top
+- Updated .sf-suggestion-chip: 11px font, 5px 12px padding, border-radius 99px (pill), 0.5px border --sf-border-tertiary, background transparent
+- Hover: --sf-bg-secondary background, --sf-border-secondary border color, no color change
+- Added --sf-border-secondary and --sf-border-tertiary CSS variables to :root (light + dark), plus --sf-text-tertiary
+- sidebar.ts: chips array sliced to max 3 via .slice(0, 3) before rendering
+- Files changed: src/editor/styles.css, src/editor/sidebar.ts, PRD.md
+- Learnings for future iterations:
+  - --sf-border-tertiary and --sf-border-secondary were referenced in PRD but not defined — needed to add to :root
+  - --sf-text-tertiary also added while updating variables (used by Patch F placeholder text)
+  - Pill chips (border-radius: 99px) with transparent background look much more subtle than filled chips
+---
+
+## Iteration N+1 - Patch F: Chat input area refinement
+- Updated .sf-chat-input-area: 12px padding, 0.5px border-top --sf-border-tertiary, --sf-bg-primary background
+- Updated .sf-chat-textarea: 13px font, 8px 12px padding, 0.5px border --sf-border-tertiary, min-height 36px, max-height 100px, smooth height transition
+- Added .sf-chat-textarea::placeholder: --sf-text-tertiary color, 13px font
+- Updated .sf-chat-send-btn: 32x32px, border-radius 50% (full circle), kept --sf-green bg + white icon
+- Updated .sf-auto-apply-row: margin-bottom 6px (was padding-bottom)
+- Updated .sf-auto-apply-label: 10px font, --sf-text-tertiary color (more muted/secondary feel)
+- No DOM structure changes needed in sidebar.ts — placeholder already says "Describe a change..."
+- Files changed: src/editor/styles.css
+- Learnings for future iterations:
+  - border-radius: 50% on a fixed-size element makes a perfect circle
+  - ::placeholder pseudo-element can override font-size independently from the textarea's own font-size
+  - padding-bottom vs margin-bottom: flex gap works better with margin for spacing between flex children
+---
+
+## Iteration N - Patch G: Overall panel dimensions and spacing
+- Changed right panel width from 320px to 340px in CSS grid
+- Set `.sf-sidebar-content` padding to 0 (panel doesn't own horizontal padding)
+- Added `.sf-props-content { padding: 12px 14px }` for properties tab spacing
+- Changed `.sf-chat-messages` padding to `12px 12px 60px` (60px bottom so last message clears input)
+- Files changed: src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `.sf-chat-content` already had inline `style.padding = '0'` so CSS `.sf-sidebar-content` padding wasn't actually affecting chat — the change still cleans up CSS intent
+  - Panel width is CSS-only (no JS), viewport slider min is separate (320px, unrelated to panel)
+---
