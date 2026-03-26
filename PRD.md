@@ -1,156 +1,88 @@
-# DO SiteForge — Phase 2.5 PRD: Claude Code CLI Integration
+# DO SiteForge — Sidebar UX Refinement Patch
 
-## Project Overview
-This patch adds Claude Code CLI as the preferred AI backend for SiteForge's chat sidebar. When Claude Code is installed, SiteForge spawns it as a subprocess and pipes prompts through it — getting OAuth auth, rich project context, and direct file writes for free. When Claude Code isn't available, it falls back to the raw Anthropic API with a user-provided key (the existing Phase 2 implementation).
-
-The chat sidebar UI, context serialization, and conversation flow remain unchanged. This patch only modifies the server-side AI layer and the file change display in the frontend.
-
-Success: With Claude Code installed, open SiteForge, type "add a footer", and see Claude Code write the file directly — no API key needed, no "Apply changes" button, canvas updates via HMR automatically.
-
-## Architecture & Key Decisions
-- **Detection**: On startup, check if `claude` CLI exists in PATH via `which claude` (macOS/Linux)
-- **Preferred path**: Claude Code CLI via subprocess (stdin/stdout pipe)
-- **Fallback path**: Raw Anthropic API (existing Phase 2 implementation, unchanged)
-- **Abstraction**: New `AIProvider` interface that both backends implement — server routes don't know which backend is active
-- **Claude Code mode**: Spawns `claude` with `--print` flag for non-interactive use, passes the project directory as context
-- **File writes**: In Claude Code mode, Claude writes files directly to disk. SiteForge detects the changes via chokidar file watcher and reports them in the chat UI after the fact (instead of before via "Apply changes")
-- **No changes to**: editor frontend architecture, chat sidebar UI, bridge/overlay, context serialization
-
-## New Files
-```
-src/
-├── server/
-│   ├── providers/
-│   │   ├── types.ts           # AIProvider interface definition
-│   │   ├── claude-code.ts     # Claude Code CLI subprocess provider
-│   │   └── anthropic-api.ts   # Raw API provider (refactored from existing ai.ts)
-│   └── watcher.ts             # File change watcher for Claude Code mode
-```
+## Overview
+Two issues to fix: (1) Claude Code isn't writing files because it lacks permissions in --print mode, and (2) the sidebar panel layout needs a professional polish pass. Fast iteration — fix and ship.
 
 ## Tasks
 
-### Phase 2.5A: Provider Abstraction
+### Fix 1: Claude Code file write permissions
 
-- [x] **Task 1: AIProvider interface and detection**
-  - Create `src/server/providers/types.ts` with `AIProvider` interface:
-    ```
-    interface AIProvider {
-      name: string                    // 'claude-code' or 'anthropic-api'
-      available: boolean              // is this provider usable?
-      supportsDirectFileWrites: boolean  // does it write files itself?
-      streamChat(params: ChatParams): AsyncIterable<ChatEvent>
-    }
-    ```
-  - `ChatParams`: `{ message: string, context: PageContext, history: ChatMessage[], projectRoot: string }`
-  - `ChatEvent`: `{ type: 'delta' | 'done' | 'error' | 'file_changed', data: any }`
-  - Create detection function `detectProviders()` in `src/server/providers/types.ts`:
-    - Check for `claude` in PATH using `child_process.execSync('which claude')` wrapped in try/catch
-    - Check for API key via existing config loader
-    - Return: `{ preferred: AIProvider | null, fallback: AIProvider | null, active: AIProvider }`
-    - Priority: Claude Code (if found) > API key (if configured) > null (disabled)
-  - Files to create: `src/server/providers/types.ts`
-  - Test: `npx tsc --noEmit` passes
+- [x] **Patch A: Enable Claude Code tool permissions**
+  - In `src/server/providers/claude-code.ts`, update the spawn arguments
+  - Add `--dangerously-skip-permissions` flag to the args array so Claude Code can write files directly without asking
+  - The full args should be: `['--print', '--output-format', 'stream-json', '--verbose', '--dangerously-skip-permissions']`
+  - Also update the prompt instruction prefix in `assemblePrompt()` to be more direct: remove any language about "asking permission" and instead say: "You have full write access to the project. Make the requested changes by editing files directly. Do not ask for permission — just make the changes."
+  - Increase the timeout from 30s (or whatever it currently is) to 120s — Claude Code needs time to read files, plan, and write
+  - Test: `npx tsc --noEmit` passes. Send "change the hero background to blue" in chat — Claude Code should write the file directly and the canvas should update via HMR
 
-- [x] **Task 2: Refactor existing API integration into Anthropic API provider**
-  - Move the existing Claude API logic from `src/server/ai.ts` into `src/server/providers/anthropic-api.ts`
-  - Implement the `AIProvider` interface: `name: 'anthropic-api'`, `available` based on API key being set, `supportsDirectFileWrites: false`
-  - `streamChat()` wraps the existing `streamChat()` function, yielding `ChatEvent` objects from the SSE stream
-  - Keep `src/server/ai.ts` as a thin orchestrator that selects the active provider and delegates
-  - The system prompt assembly and context formatting stay in `src/server/ai.ts` (shared by both providers)
-  - Files to create: `src/server/providers/anthropic-api.ts`
-  - Files to modify: `src/server/ai.ts` (refactor to use provider interface)
-  - Test: `npx tsc --noEmit` passes. Existing API key flow still works unchanged.
+### Fix 2: Stop auto-switching to Properties tab on element select
 
-- [x] **Task 3: Claude Code CLI provider**
-  - Create `src/server/providers/claude-code.ts` implementing `AIProvider`
-  - `name: 'claude-code'`, `available` based on detection, `supportsDirectFileWrites: true`
-  - `streamChat()` implementation:
-    - Spawn `claude` as a child process with: `claude --print --output-format stream-json` and pipe the assembled prompt to stdin
-    - The prompt sent to Claude Code includes: the user's message, the serialized canvas context (same format as API path), and an instruction prefix: "You are inside DO SiteForge editing a website. The user is looking at the canvas and asking for changes. Write files directly to implement the request."
-    - Parse Claude Code's stdout as streaming JSON events, yield as `ChatEvent` objects
-    - Map Claude Code's output events to `ChatEvent` types: text content → `delta`, completion → `done`, errors → `error`
-    - Set `cwd` of the child process to the project root directory so Claude Code has full project context
-  - Handle process errors: if `claude` crashes or times out (30s), yield an error event and clean up the subprocess
-  - Files to create: `src/server/providers/claude-code.ts`
-  - Test: `npx tsc --noEmit` passes
-
-- [x] **Task 4: Provider selection and startup integration**
-  - Update `src/server/ai.ts` to use `detectProviders()` on init
-  - Log the active provider at startup via chalk: "AI: Claude Code (OAuth)" or "AI: Anthropic API (sk-...xxxx)" or "AI: Disabled (no provider available)"
-  - Update `src/server/routes/chat.ts` to use the provider abstraction — it should call `ai.streamChat()` without knowing which provider is active
-  - Add `GET /api/ai/status` endpoint that returns: `{ provider: string, available: boolean, supportsDirectWrites: boolean }` — the frontend uses this to adapt the UI
-  - Update `src/cli/commands/open.ts` startup message to show which provider is active
-  - Files to modify: `src/server/ai.ts`, `src/server/routes/chat.ts`, `src/cli/commands/open.ts`
-  - Files to create or modify: `src/server/index.ts` (register status endpoint)
-  - Test: `npx tsc --noEmit` passes. With Claude Code installed, startup shows "AI: Claude Code (OAuth)". Without, falls back to API key or disabled.
-
-### Phase 2.5B: File Change Detection for Claude Code Mode
-
-- [x] **Task 5: File watcher for direct writes**
-  - Create `src/server/watcher.ts` using chokidar to watch the project directory for file changes
-  - Ignore: `node_modules/`, `.git/`, `dist/`, `.next/`, `.siteforge/`
-  - When a file change is detected during an active Claude Code chat session: record the change as `{ filepath, type: 'created' | 'modified' | 'deleted', timestamp }`
-  - Expose `startWatching()`, `stopWatching()`, `getRecentChanges(since: number): FileChange[]`
-  - The watcher is only active during a Claude Code chat response (start when chat begins, stop when response completes) to avoid noise from unrelated file changes
-  - Files to create: `src/server/watcher.ts`
-  - Files to modify: `src/server/ai.ts` (start/stop watcher around Claude Code sessions)
-  - Test: `npx tsc --noEmit` passes
-
-- [x] **Task 6: Report file changes in chat after Claude Code response**
-  - When using Claude Code provider and a response completes, query the watcher for file changes that occurred during the session
-  - Send file changes to the frontend as `file_changed` events via SSE after the `done` event: `event: files\ndata: {"changes": [{"filepath": "src/components/Footer.tsx", "type": "created"}, ...]}\n\n`
-  - The chat sidebar receives these events and displays them as a file change summary below the AI message — same visual treatment as the Phase 2 file change cards, but labeled "Files written by Claude Code" instead of showing an "Apply changes" button
-  - Each file change card shows: filename, created/modified badge, and a "View" button that shows the file content in an expandable code block (fetched via `GET /api/files/read`)
-  - Files to modify: `src/server/routes/chat.ts` (emit file events), `src/editor/sidebar.ts` (handle `files` SSE event)
-  - Test: `npx tsc --noEmit` passes
-
-### Phase 2.5C: Frontend Adaptation
-
-- [x] **Task 7: Adapt chat UI based on active provider**
-  - On sidebar initialization, fetch `/api/ai/status` to determine which provider is active
-  - If Claude Code provider (`supportsDirectWrites: true`):
-    - Hide the "Apply changes" button on AI responses (files are already written)
-    - Hide the "Auto-apply" toggle (not needed — writes are automatic)
-    - Show a small "Claude Code" badge next to the AI label in chat messages
-    - File change cards show "Written" badge instead of code preview + apply button
-  - If Anthropic API provider (`supportsDirectWrites: false`):
-    - Show "Apply changes" button and "Auto-apply" toggle as designed in Phase 2
-    - Show a small "API" badge next to the AI label in chat messages
-  - If no provider available:
-    - Show the setup guide (already built in Phase 2 Task 18)
-    - Add a note: "Install Claude Code for the best experience — no API key needed"
+- [ ] **Patch B: Remove auto-tab-switch on selection**
+  - In `src/editor/sidebar.ts`, find the `forge:selectionChanged` event listener that auto-switches to the Properties tab when an element is selected
+  - Remove the tab switch behavior entirely. Selecting an element should update the context indicator at the top of the chat tab (showing the element's tag and class) and update the properties panel content in the background — but it should NOT change which tab is active
+  - The user controls which tab they're on. If they're in AI Chat, they stay in AI Chat. If they want Properties, they click the tab themselves.
+  - The context indicator in the chat tab already tells the user which element is selected — that's enough visual feedback
   - Files to modify: `src/editor/sidebar.ts`
+  - Test: `npx tsc --noEmit` passes. Select elements on canvas while chat tab is open — chat tab stays active, context indicator updates.
+
+### Fix 3: Sidebar layout and visual polish
+
+- [ ] **Patch C: Tab bar refinement**
+  - Clean up the tab bar at the top of the right panel
+  - Tabs should be: full-width, evenly split, 40px tall, 13px font weight 500
+  - Active tab: text color --sf-green (#3A7D44), 2px solid bottom border in --sf-green
+  - Inactive tab: text color --sf-text-secondary, no bottom border, hover shows light background
+  - Remove any extra padding or margin that makes the tabs feel cramped
+  - The context indicator below the tabs should have: 8px vertical padding, subtle background (--sf-bg-secondary), 11px monospace font, left-aligned
+  - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts` (if DOM structure needs adjusting)
   - Test: `npx tsc --noEmit` passes
 
-- [x] **Task 8: Undo support for Claude Code writes**
-  - When Claude Code writes files directly, the user should be able to undo those changes
-  - Before a Claude Code chat session starts, snapshot the files that might be affected (this is hard to predict — so instead, use git)
-  - Check if the project has a git repo. If yes: before each Claude Code session, store the current git HEAD as a restore point. Add an "Undo AI changes" button to the file change card that runs `git checkout -- <filepath>` for each changed file.
-  - If no git repo: show a warning "Undo not available — initialize git for undo support" and skip the undo button
-  - The git restore triggers HMR reload automatically (file change on disk)
-  - Files to modify: `src/server/routes/chat.ts` (add undo endpoint), `src/editor/sidebar.ts` (add undo button to file change cards)
-  - Files to create: `src/server/git.ts` (git status check, snapshot, restore helpers)
+- [ ] **Patch D: Chat message styling**
+  - User messages: 13px font size (not 12), 10px 14px padding, max-width 85% of panel, border-radius 12px 12px 4px 12px, background --sf-green at 8% opacity, text color --sf-text-primary (not accent)
+  - AI messages: 13px font size, 0 padding (content flows naturally), full width, 16px margin-bottom between messages
+  - AI "Claude Code" badge: smaller (9px font), pill shape, subtle blue-tinted background, aligned to top-left of message — should feel like a tag, not a block
+  - Message spacing: 12px gap between messages, 20px gap between user→AI message pairs
+  - Code blocks in AI responses: 12px font, --sf-bg-secondary background, 8px 12px padding, 6px border-radius, 0.5px border
+  - Inline code: 12px font, 2px 5px padding, --sf-bg-secondary background, 4px border-radius
+  - Files to modify: `src/editor/styles.css`
+  - Test: `npx tsc --noEmit` passes
+
+- [ ] **Patch E: Suggestion chips cleanup**
+  - Chips should be: 11px font, 5px 12px padding, border-radius 99px (full pill), 0.5px border --sf-border-tertiary, background transparent
+  - Hover: background --sf-bg-secondary, border color --sf-border-secondary
+  - Layout: flex-wrap, 6px gap, left-aligned (not centered), 8px margin-top from the AI message
+  - Maximum 3 chips per response — if more are generated, truncate
+  - Chips should feel like gentle suggestions, not prominent buttons
+  - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts` (if chip count needs limiting)
+  - Test: `npx tsc --noEmit` passes
+
+- [ ] **Patch F: Chat input area refinement**
+  - Input area container: 12px padding all around, border-top 0.5px solid --sf-border-tertiary, clean background (--sf-bg-primary)
+  - Textarea: 13px font, 8px 12px padding, border-radius 8px, 0.5px border, min-height 36px, max-height 100px (roughly 4 lines), smooth auto-grow transition
+  - Send button: 32px x 32px circle, --sf-green background, white arrow icon, 6px border-radius to make it a circle, vertically centered with textarea
+  - Send button disabled state: opacity 0.4, cursor not-allowed
+  - Auto-apply toggle (if visible): 10px font, muted color, positioned above the input row with 6px margin-bottom, should feel secondary/optional
+  - Placeholder text: 13px, --sf-text-tertiary color, should say "Describe a change..." (short and clean)
+  - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts` (if DOM structure needs adjusting)
+  - Test: `npx tsc --noEmit` passes
+
+- [ ] **Patch G: Overall panel dimensions and spacing**
+  - Right panel width: 340px (slight increase from 320px for breathing room)
+  - Panel internal spacing: 0 horizontal padding on the panel itself (content items handle their own padding)
+  - Chat messages area: 12px horizontal padding, scroll with 60px bottom padding so last message isn't flush against input
+  - Properties tab content: 14px horizontal padding, consistent with current design
+  - Ensure the panel doesn't have double borders (panel border + tab bar border stacking)
+  - All transitions: 150ms ease for hover states on buttons, tabs, chips
+  - Files to modify: `src/editor/styles.css`, `src/editor/canvas.ts` or `src/editor/app.ts` (if panel width is set in JS)
   - Test: `npx tsc --noEmit` passes
 
 ## Testing Strategy
-- Primary: `npx tsc --noEmit` (typecheck)
-- Final: `npx tsup` builds without errors
-- Integration with Claude Code: `node dist/bin/forge.js open ./test/fixtures/static-site/` — verify "AI: Claude Code (OAuth)" in startup, send a chat message, verify response streams and files are written
-- Integration without Claude Code: rename/hide `claude` binary temporarily, verify fallback to API key path
-- Fallback test: no Claude Code AND no API key → verify disabled state with setup guide
+- Primary: `npx tsc --noEmit`
+- Visual: rebuild and check each patch visually in the browser
+- Integration: after Patch A, send a chat message and verify files are written + canvas updates
 
-## Out of Scope
-- No Gemini integration — Phase 3
-- No prompt router — Phase 3
-- No source map bridge — Phase 3
-- No conversation persistence — Phase 4
-- No switching between providers mid-session (restart required)
-
-## Notes for Ralph
-- `claude --print --output-format stream-json` is the non-interactive mode for Claude Code. It reads from stdin, streams JSON events to stdout, and exits when done. Test this manually first to confirm the flag names — they may have changed since training data.
-- The provider abstraction is intentionally simple — just `streamChat()` returning an async iterable. Don't over-engineer it with middleware, retry logic, or provider chains. Two providers, one interface, pick on startup.
-- chokidar is already installed from Phase 1 (used for dev server file watching). No new dependency needed for the watcher.
-- The git-based undo is a pragmatic solution, not a perfect one. It restores individual files, not atomic commits. If Claude Code writes 3 files and the user undoes 1, the other 2 stay. This is fine for Phase 2.5 — a more sophisticated undo (shadow copies, virtual filesystem) can come later.
-- Claude Code subprocess should be spawned fresh for each chat message, not kept as a persistent process. This keeps the implementation simple and avoids state management issues.
-- When piping the prompt to Claude Code's stdin, include the canvas context in the same format as the API path — but you can be less verbose since Claude Code already has project context from the filesystem. Focus the context injection on: what the user is looking at (selected element), what viewport they're on, and what page they're editing.
-- The `/api/ai/status` endpoint is called once on sidebar init. Don't poll it — the provider doesn't change during a session.
+## Notes
+- Patches A and B are the functional fixes — do these first. Patches C-G are visual polish and can be done in any order.
+- For the CSS patches, use the existing --sf- CSS custom properties wherever possible for consistency.
+- The sidebar should feel like it belongs in a professional tool — think VS Code sidebar or Figma inspector. Clean, quiet, information-dense without being cramped.
+- Avoid any decorative elements — no shadows, no gradients, no colored backgrounds on the panel. Let whitespace and typography do the work.

@@ -22,7 +22,7 @@ export function createClaudeCodeProvider(): AIProvider {
 
       let child: ChildProcess;
       try {
-        child = spawn('claude', ['--print', '--output-format', 'stream-json'], {
+        child = spawn('claude', ['--print', '--output-format', 'stream-json', '--verbose', '--dangerously-skip-permissions'], {
           cwd: projectRoot,
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env },
@@ -44,8 +44,8 @@ export function createClaudeCodeProvider(): AIProvider {
         child.stdin.end();
       }
 
-      // Set up timeout (30s)
-      const TIMEOUT_MS = 30_000;
+      // Set up timeout (120s)
+      const TIMEOUT_MS = 120_000;
       let timedOut = false;
       const timer = setTimeout(() => {
         timedOut = true;
@@ -113,7 +113,7 @@ export function createClaudeCodeProvider(): AIProvider {
       } catch (err) {
         clearTimeout(timer);
         if (timedOut) {
-          yield { type: 'error', data: { message: 'Claude Code timed out after 30 seconds', errorType: 'timeout' } };
+          yield { type: 'error', data: { message: 'Claude Code timed out after 120 seconds', errorType: 'timeout' } };
         } else {
           yield {
             type: 'error',
@@ -132,7 +132,7 @@ export function createClaudeCodeProvider(): AIProvider {
       const exitCode = await waitForExit(child);
 
       if (timedOut) {
-        yield { type: 'error', data: { message: 'Claude Code timed out after 30 seconds', errorType: 'timeout' } };
+        yield { type: 'error', data: { message: 'Claude Code timed out after 120 seconds', errorType: 'timeout' } };
         return;
       }
 
@@ -160,7 +160,7 @@ function assemblePrompt(
 
   // Instruction prefix for Claude Code
   parts.push(
-    'You are inside DO SiteForge editing a website. The user is looking at the canvas and asking for changes. Write files directly to implement the request.'
+    'You have full write access to the project. Make the requested changes by editing files directly. Do not ask for permission — just make the changes.'
   );
 
   // Add system context (page summary, selected element, project info)
