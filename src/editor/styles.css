@@ -191,11 +191,11 @@ html, body {
 }
 
 .sf-chat-bubble-user {
-  background: rgba(55, 138, 221, 0.1);
+  background: rgba(58, 125, 68, 0.08);
   color: var(--sf-text-primary);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 12px 12px 4px 12px;
   max-width: 85%;
   word-wrap: break-word;
@@ -205,6 +205,12 @@ html, body {
 /* AI messages — left-aligned */
 .sf-chat-msg-assistant {
   justify-content: flex-start;
+  flex-direction: column;
+}
+
+/* Extra gap between user→AI message pairs */
+.sf-chat-msg-user + .sf-chat-msg-assistant {
+  margin-top: 8px;
 }
 
 .sf-chat-bubble-ai {
@@ -226,16 +232,16 @@ html, body {
 /* Inline code in AI messages */
 .sf-chat-bubble-ai code {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  font-size: 11px;
-  background: var(--sf-overlay);
-  padding: 1px 4px;
-  border-radius: 3px;
+  font-size: 12px;
+  background: var(--sf-bg-secondary);
+  padding: 2px 5px;
+  border-radius: 4px;
 }
 
 /* Code blocks in AI messages */
 .sf-chat-bubble-ai pre {
-  background: var(--sf-bg-tertiary);
-  border: 1px solid var(--sf-border);
+  background: var(--sf-bg-secondary);
+  border: 0.5px solid var(--sf-border);
   border-radius: 6px;
   margin: 8px 0;
   overflow: hidden;
@@ -243,8 +249,8 @@ html, body {
 
 .sf-chat-bubble-ai pre code {
   display: block;
-  padding: 10px 12px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
   line-height: 1.5;
   overflow-x: auto;
   background: transparent;
@@ -1168,11 +1174,12 @@ html, body {
 /* Provider badge on AI messages */
 .sf-provider-badge {
   display: inline-block;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: 99px;
   margin-bottom: 4px;
+  align-self: flex-start;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 

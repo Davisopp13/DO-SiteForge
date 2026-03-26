@@ -37,7 +37,7 @@ Two issues to fix: (1) Claude Code isn't writing files because it lacks permissi
   - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts` (if DOM structure needs adjusting)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Patch D: Chat message styling**
+- [x] **Patch D: Chat message styling**
   - User messages: 13px font size (not 12), 10px 14px padding, max-width 85% of panel, border-radius 12px 12px 4px 12px, background --sf-green at 8% opacity, text color --sf-text-primary (not accent)
   - AI messages: 13px font size, 0 padding (content flows naturally), full width, 16px margin-bottom between messages
   - AI "Claude Code" badge: smaller (9px font), pill shape, subtle blue-tinted background, aligned to top-left of message — should feel like a tag, not a block

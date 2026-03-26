@@ -819,3 +819,52 @@
   - SSE files event extended with `gitRef` field for frontend to know undo is available
   - Undo button disabled after successful undo to prevent double-undo
 ---
+
+## Iteration 50 - Patch A: Enable Claude Code tool permissions
+- Added `--dangerously-skip-permissions` to spawn args in `createClaudeCodeProvider()`
+- Updated `assemblePrompt()` instruction prefix to: "You have full write access to the project. Make the requested changes by editing files directly. Do not ask for permission — just make the changes."
+- Timeout was already 120s from a prior iteration — no change needed
+- Files changed: src/server/providers/claude-code.ts, PRD.md
+- Learnings for future iterations:
+  - `--dangerously-skip-permissions` flag lets Claude Code write files in --print mode without interactive permission prompts
+  - Instruction prefix wording matters: "Do not ask for permission — just make the changes" is more direct than the previous version
+  - Timeout of 120s was already correct from Iteration 45 — PRD said "increase from 30s" but it had already been set to 120s
+---
+
+## Iteration 51 - Patch B: Remove auto-tab-switch on selection
+- Removed `switchTab('properties')` call from the `forge:selectionChanged` event listener in `createSidebar()`
+- Context indicator and placeholder still update on selection — only the tab switch was removed
+- Files changed: src/editor/sidebar.ts, PRD.md
+- Learnings for future iterations:
+  - The auto-switch was in the `forge:selectionChanged` listener at line ~735 in sidebar.ts
+  - The fix was a 4-line → 1-line change: just delete the `if (element) { switchTab('properties'); }` block
+---
+
+## Iteration N - Patch C: Tab bar refinement
+- Updated tab bar styles in src/editor/styles.css
+- Tabs: 40px height, font-weight 500, evenly split (flex: 1 unchanged)
+- Active tab: --sf-green color + full-width (left:0, right:0) 2px solid bottom border via ::after
+- Inactive tab hover: --sf-overlay background (light background effect)
+- Context indicator: 8px vertical padding, --sf-bg-secondary background, left-aligned text
+- No DOM structure changes needed (sidebar.ts untouched)
+- Files changed: src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - --sf-green and --sf-bg-secondary already defined in :root — no new vars needed
+  - Active tab border spans full width (left:0 right:0) for cleaner look vs. inset (left:8px right:8px)
+  - Context indicator already used --sf-overlay which is semi-transparent; --sf-bg-secondary is more visible
+---
+
+## Iteration N - Patch D: Chat message styling
+- User messages: 13px font, rgba(58,125,68,0.08) background (--sf-green at 8%), padding 10px 14px
+- AI messages: flex-direction: column on .sf-chat-msg-assistant so badge stacks above bubble
+- .sf-chat-msg-user + .sf-chat-msg-assistant { margin-top: 8px } for 20px user→AI gap (12px + 8px)
+- Badge: 9px font, border-radius 99px (pill), align-self: flex-start for top-left positioning
+- Code blocks: --sf-bg-secondary background, 0.5px border, 12px font, 8px 12px padding
+- Inline code: 12px font, 2px 5px padding, --sf-bg-secondary background, 4px border-radius
+- Files changed: src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - flex-direction: column on assistant message row needed for badge to stack above bubble
+  - align-self: flex-start on badge keeps it left-aligned within the column
+  - .sf-chat-msg-user + .sf-chat-msg-assistant selector adds extra spacing at user→AI transitions
+  - rgba(58,125,68,0.08) is --sf-green at 8% opacity — consistent with --sf-green hex value
+---
