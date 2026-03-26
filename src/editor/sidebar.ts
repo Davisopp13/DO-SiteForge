@@ -731,13 +731,10 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   chatTabBtn.addEventListener('click', () => switchTab('chat'));
   propsTabBtn.addEventListener('click', () => switchTab('properties'));
 
-  // Auto-switch to Properties when element is selected
+  // Update context indicator and placeholder when selection changes — do NOT auto-switch tabs
   window.addEventListener('forge:selectionChanged', ((e: CustomEvent) => {
     const element: ElementInfo | null = e.detail?.element || null;
     selectedElement = element;
-    if (element) {
-      switchTab('properties');
-    }
     updateContextIndicator();
     updatePlaceholder();
   }) as EventListener);
