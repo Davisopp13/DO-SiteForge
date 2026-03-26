@@ -17,7 +17,7 @@ Two issues to fix: (1) Claude Code isn't writing files because it lacks permissi
 
 ### Fix 2: Stop auto-switching to Properties tab on element select
 
-- [ ] **Patch B: Remove auto-tab-switch on selection**
+- [x] **Patch B: Remove auto-tab-switch on selection**
   - In `src/editor/sidebar.ts`, find the `forge:selectionChanged` event listener that auto-switches to the Properties tab when an element is selected
   - Remove the tab switch behavior entirely. Selecting an element should update the context indicator at the top of the chat tab (showing the element's tag and class) and update the properties panel content in the background — but it should NOT change which tab is active
   - The user controls which tab they're on. If they're in AI Chat, they stay in AI Chat. If they want Properties, they click the tab themselves.
@@ -27,7 +27,7 @@ Two issues to fix: (1) Claude Code isn't writing files because it lacks permissi
 
 ### Fix 3: Sidebar layout and visual polish
 
-- [ ] **Patch C: Tab bar refinement**
+- [x] **Patch C: Tab bar refinement**
   - Clean up the tab bar at the top of the right panel
   - Tabs should be: full-width, evenly split, 40px tall, 13px font weight 500
   - Active tab: text color --sf-green (#3A7D44), 2px solid bottom border in --sf-green
