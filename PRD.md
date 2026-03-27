@@ -130,7 +130,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
 
 ### Fix 6: Chat UI polish
 
-- [ ] **Task 11: Message layout and typography**
+- [x] **Task 11: Message layout and typography**
   - User messages: 13px font, max-width 85%, right-aligned, padding 10px 14px, border-radius 14px 14px 4px 14px, background --sf-green at 8% opacity, color --sf-text-primary
   - AI messages: 13px font, full width, no background, 0 horizontal padding, 16px margin-bottom
   - AI "Claude Code" badge: 9px font, pill shape (99px border-radius), padding 2px 8px, background #E6F1FB, color #185FA5, display inline-block, margin-bottom 6px above the message text — should feel like a subtle tag, not a header

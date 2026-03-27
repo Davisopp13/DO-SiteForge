@@ -1052,3 +1052,18 @@
   - `forge:undoComplete` event decouples filechanges.ts from sidebar toast function (same pattern as forge:filesApplied)
   - The sf-apply-spinner class can be reused for the undo button spinner (same animation)
 ---
+
+## Iteration 57 - Task 11 (PRD2): Message layout and typography
+- Updated user message border-radius from 12px to 14px 14px 4px 14px per PRD spec
+- Updated message gap from 12px to 14px for same-sender spacing
+- User→AI pair extra margin: 6px (14px gap + 6px = 20px total)
+- AI bubble: width 100%, padding 0, margin-bottom 16px
+- Provider badge: padding 2px 8px, margin-bottom 6px, #E6F1FB bg / #185FA5 color (with dark mode override)
+- Code block inner padding: 10px 12px (was 8px 12px)
+- Inline code padding: 2px 6px (was 2px 5px)
+- Files changed: src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - Provider badge hardcoded colors need dark mode media query override for visibility
+  - flex gap + adjacent sibling margin-top is the cleanest way to get different spacing between same-sender vs cross-sender messages
+  - CSS-only task — no TypeScript changes needed
+---
