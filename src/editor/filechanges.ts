@@ -212,9 +212,26 @@ export interface WatchedFileChange {
 }
 
 /**
+ * Fetch file content from the server and populate a preview element.
+ */
+async function fetchFileContent(filepath: string, previewEl: HTMLElement): Promise<void> {
+  try {
+    const res = await fetch(`/api/files/read?path=${encodeURIComponent(filepath)}`);
+    if (res.ok) {
+      const data = await res.json() as { content: string };
+      previewEl.innerHTML = `<pre><code>${escapeHtml(data.content)}</code></pre>`;
+    } else {
+      previewEl.innerHTML = `<pre><code>Error: Could not read file</code></pre>`;
+    }
+  } catch {
+    previewEl.innerHTML = `<pre><code>Error: Could not read file</code></pre>`;
+  }
+}
+
+/**
  * Render file change cards for files written directly by Claude Code.
- * Shows filename, created/modified/deleted badge, and a "View" button
- * that fetches and displays file content in an expandable code block.
+ * Shows filename, created/modified/deleted badge, and a collapsible code block
+ * with a "View diff" toggle. File content is fetched automatically on render.
  * No "Apply changes" button since files are already written.
  * If gitRef is provided, shows an "Undo AI changes" button that restores files.
  */
@@ -225,7 +242,7 @@ export function renderDirectWriteChanges(changes: WatchedFileChange[], gitRef?: 
   // Label
   const label = document.createElement('div');
   label.className = 'sf-file-changes-label';
-  label.textContent = 'Files written by Claude Code';
+  label.textContent = 'Files modified';
   container.appendChild(label);
 
   for (const change of changes) {
@@ -251,45 +268,35 @@ export function renderDirectWriteChanges(changes: WatchedFileChange[], gitRef?: 
     header.appendChild(filename);
     header.appendChild(badge);
 
-    // View button (fetches content on click)
+    // Collapsible code block with toggle (for non-deleted files)
     if (change.type !== 'deleted') {
-      const viewBtn = document.createElement('button');
-      viewBtn.className = 'sf-file-card-view';
-      viewBtn.textContent = 'View';
-      viewBtn.title = 'View file content';
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'sf-file-card-toggle';
+      toggleBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+      toggleBtn.title = 'View diff';
+      header.appendChild(toggleBtn);
 
       const preview = document.createElement('div');
       preview.className = 'sf-file-card-preview';
       preview.style.display = 'none';
+      preview.innerHTML = `<pre><code>Loading...</code></pre>`;
 
-      viewBtn.addEventListener('click', async () => {
-        if (preview.style.display !== 'none') {
-          // Collapse
-          preview.style.display = 'none';
-          viewBtn.textContent = 'View';
-          return;
-        }
+      // Auto-fetch file content on render
+      fetchFileContent(change.filepath, preview);
 
-        // Fetch and show content
-        viewBtn.textContent = 'Loading...';
-        viewBtn.disabled = true;
-        try {
-          const res = await fetch(`/api/files/read?path=${encodeURIComponent(change.filepath)}`);
-          if (res.ok) {
-            const data = await res.json() as { content: string };
-            preview.innerHTML = `<pre><code>${escapeHtml(data.content)}</code></pre>`;
-          } else {
-            preview.innerHTML = `<pre><code>Error: Could not read file</code></pre>`;
-          }
-        } catch {
-          preview.innerHTML = `<pre><code>Error: Could not read file</code></pre>`;
-        }
-        viewBtn.disabled = false;
-        viewBtn.textContent = 'Hide';
-        preview.style.display = '';
+      // Toggle expand/collapse
+      function togglePreview(): void {
+        const isExpanded = preview.style.display !== 'none';
+        preview.style.display = isExpanded ? 'none' : '';
+        toggleBtn.classList.toggle('expanded', !isExpanded);
+      }
+
+      toggleBtn.addEventListener('click', togglePreview);
+      header.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.sf-file-card-toggle')) return;
+        togglePreview();
       });
 
-      header.appendChild(viewBtn);
       card.appendChild(header);
       card.appendChild(preview);
     } else {

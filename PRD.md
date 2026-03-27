@@ -94,7 +94,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
 
 ### Fix 4: File change visibility
 
-- [ ] **Task 8: Always show file changes after AI responses**
+- [x] **Task 8: Always show file changes after AI responses**
   - The problem: when Claude Code writes files directly, the user can't tell what changed. The file watcher detects changes but they're not always displayed clearly.
   - After every AI response completes (both Claude Code and API modes), always show a file changes section:
     - Claude Code mode: query the file watcher for changes during the session, display as "Files modified" cards with filepath, change type (created/modified), and a "View diff" button

@@ -1000,3 +1000,20 @@
   - Leading with the user request instead of instructions/context helps Claude Code start acting faster
   - `systemContext.indexOf('--- Current Context ---')` extracts just the context block, avoiding ~300 tokens of boilerplate
   - Conversation history goes before context so Claude Code has continuity before seeing current state
+
+## Iteration 54 - Task 8 (PRD2): Always show file changes after AI responses
+- Unified Claude Code file change cards to match API mode's collapsible code block pattern
+- Added `fetchFileContent()` helper in filechanges.ts — auto-fetches file content on render via `/api/files/read`
+- Replaced lazy "View" button with toggle chevron + collapsible `<pre><code>` block (same pattern as API mode's renderFileChanges)
+- Header click and chevron click both toggle expand/collapse
+- Renamed label from "Files written by Claude Code" to "Files modified"
+- Toggle button title set to "View diff" for tooltip
+- Content auto-fetched on render (shows "Loading..." while fetching), collapsed by default
+- Deleted files still render without code block (no content to show)
+- Files changed: src/editor/filechanges.ts, PRD.md
+- Learnings for future iterations:
+  - `fetchFileContent` is async fire-and-forget on render — populates the collapsed preview in background
+  - Toggle pattern reused from renderFileChanges: chevron SVG + `.expanded` class + header click delegation
+  - Removed unused `contentFetched` variable to keep code clean
+  - Both modes now have consistent card UI: filename + badge + collapsible code block
+---
