@@ -150,7 +150,9 @@ export function buildSystemPrompt(context?: PageContext): string {
   }
 
   if (context.viewport) {
-    parts.push(`Viewport: ${context.viewport.width}px (${context.viewport.mode})`);
+    const { mode, width } = context.viewport;
+    const modeLabel = mode === 'custom' ? `custom` : mode;
+    parts.push(`Viewport: The user is viewing the site at ${modeLabel} width (${width}px).`);
   }
 
   if (context.url) {

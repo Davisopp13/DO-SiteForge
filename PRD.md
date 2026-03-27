@@ -60,7 +60,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/editor/context.ts`, `src/editor/sidebar.ts`, `src/editor/app.ts` (verify wiring), potentially `src/server/ai.ts`
   - Test: `npx tsc --noEmit` passes. Select the hero section, type "make this blue" in chat — Claude Code's response should reference the hero element specifically, not guess.
 
-- [ ] **Task 5: Pass viewport state in context**
+- [x] **Task 5: Pass viewport state in context**
   - The canvas context should include the current viewport mode and width so Claude Code knows if you're editing at mobile, tablet, or desktop
   - In `getCanvasContext()`, read the current viewport from the viewport module — check for `.sf-viewport-btn.active` or dispatch/listen for a `forge:viewportState` event
   - Include in the context: `viewport: { mode: 'mobile' | 'tablet' | 'desktop' | 'custom', width: 375 }`

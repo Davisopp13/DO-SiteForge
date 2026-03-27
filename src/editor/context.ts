@@ -21,10 +21,12 @@ export interface SelectionContext {
   childCount: number;
 }
 
+export type ViewportMode = 'mobile' | 'tablet' | 'desktop' | 'custom';
+
 export interface CanvasContext {
   page: PageSummary;
   selection: SelectionContext | null;
-  viewport: { width: number; mode: string };
+  viewport: { width: number; mode: ViewportMode };
   projectType: string;
 }
 
@@ -156,6 +158,8 @@ function buildSelectionContext(
 /**
  * Collects the full canvas context for AI chat: page summary, selection, and viewport.
  */
+const VIEWPORT_MODES: ViewportMode[] = ['mobile', 'tablet', 'desktop', 'custom'];
+
 export async function getCanvasContext(
   canvas: CanvasManager,
   overlay: OverlayManager,
@@ -168,10 +172,15 @@ export async function getCanvasContext(
     getSelectionContext(canvas, overlay),
   ]);
 
+  // Normalize viewportMode to the known union type; fall back to 'desktop'
+  const mode: ViewportMode = (VIEWPORT_MODES as string[]).includes(viewportMode)
+    ? (viewportMode as ViewportMode)
+    : 'desktop';
+
   return {
     page,
     selection,
-    viewport: { width: viewportWidth, mode: viewportMode },
+    viewport: { width: viewportWidth, mode },
     projectType,
   };
 }
