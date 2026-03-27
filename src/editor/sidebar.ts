@@ -82,16 +82,39 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   const chatMessagesEl = document.createElement('div');
   chatMessagesEl.className = 'sf-chat-messages';
 
-  // Empty state
-  const emptyState = document.createElement('div');
-  emptyState.className = 'sf-chat-placeholder';
-  emptyState.innerHTML = `
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-    <span>Describe a change to your site</span>
-  `;
-  chatMessagesEl.appendChild(emptyState);
+  // Empty state — anvil icon + prompt + clickable examples
+  const EXAMPLE_PROMPTS = [
+    'Add a contact form section',
+    'Improve the page typography',
+    'Make the hero full-width',
+  ];
+
+  function createEmptyState(): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'sf-chat-placeholder';
+    // SiteForge anvil icon (24px, muted)
+    el.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sf-chat-placeholder-icon">
+        <path d="M7 4h10l1 4H6l1-4z"/>
+        <rect x="3" y="8" width="18" height="3" rx="1"/>
+        <path d="M8 11v6a3 3 0 0 0 3 3h2a3 3 0 0 0 3-3v-6"/>
+      </svg>
+      <span class="sf-chat-placeholder-text">Ask AI to build or edit your site</span>
+    `;
+    const examplesEl = document.createElement('div');
+    examplesEl.className = 'sf-chat-placeholder-examples';
+    for (const prompt of EXAMPLE_PROMPTS) {
+      const btn = document.createElement('button');
+      btn.className = 'sf-chat-placeholder-example';
+      btn.textContent = prompt;
+      btn.addEventListener('click', () => sendMessage(prompt));
+      examplesEl.appendChild(btn);
+    }
+    el.appendChild(examplesEl);
+    return el;
+  }
+
+  chatMessagesEl.appendChild(createEmptyState());
 
   // No-API-key setup guide
   const setupGuide = document.createElement('div');
@@ -356,10 +379,10 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: 'Request failed' }));
+        const errData = await res.json().catch(() => ({ error: 'Request failed' })) as { error?: string };
         hideLoading();
         setInputDisabled(false);
-        addMessage('assistant', `Error: ${errData.error || res.statusText}`);
+        showErrorMessage(errData.error || res.statusText);
         return;
       }
 
@@ -489,22 +512,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     } catch (err) {
       hideLoading();
       setInputDisabled(false);
-      const retryEl = addMessage('assistant', '');
-      const retryBubble = retryEl.querySelector('.sf-chat-bubble-ai');
-      if (retryBubble) {
-        retryBubble.innerHTML = `<p>Connection error — try again</p><button class="sf-chat-retry-btn">Retry</button>`;
-        const retryBtn = retryBubble.querySelector('.sf-chat-retry-btn');
-        retryBtn?.addEventListener('click', () => {
-          // Remove the error message
-          retryEl.remove();
-          messages.pop();
-          // Resend the last user message
-          const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-          if (lastUserMsg) {
-            sendMessage(lastUserMsg.content);
-          }
-        });
-      }
+      showErrorMessage('Connection error — try again');
     }
   }
 
@@ -530,16 +538,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   function clearChat(): void {
     messages.length = 0;
     chatMessagesEl.innerHTML = '';
-    // Restore empty state
-    const newEmptyState = document.createElement('div');
-    newEmptyState.className = 'sf-chat-placeholder';
-    newEmptyState.innerHTML = `
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      <span>Describe a change to your site</span>
-    `;
-    chatMessagesEl.appendChild(newEmptyState);
+    chatMessagesEl.appendChild(createEmptyState());
   }
 
   const propsContent = document.createElement('div');
@@ -638,6 +637,41 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     if (idx >= 0 && messages[idx].role === 'assistant') {
       messages[idx].content = content;
     }
+    scrollToBottom();
+  }
+
+  /** Show a red-tinted error message with error icon and Retry button */
+  function showErrorMessage(errorText: string): void {
+    hideEmptyState();
+
+    const errEl = document.createElement('div');
+    errEl.className = 'sf-chat-msg sf-chat-msg-error';
+    errEl.innerHTML = `
+      <div class="sf-chat-error-content">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sf-chat-error-icon">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>${errorText}</span>
+      </div>
+    `;
+
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'sf-chat-retry-btn';
+    retryBtn.textContent = 'Retry';
+    retryBtn.addEventListener('click', () => {
+      // Remove the error message element
+      errEl.remove();
+      // Resend the last user message
+      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+      if (lastUserMsg) {
+        sendMessage(lastUserMsg.content);
+      }
+    });
+    errEl.appendChild(retryBtn);
+
+    chatMessagesEl.appendChild(errEl);
     scrollToBottom();
   }
 

@@ -160,7 +160,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 14: Empty state and loading states**
+- [x] **Task 14: Empty state and loading states**
   - Empty chat state (no messages yet): centered vertically in the chat area, show a minimal prompt — SiteForge anvil icon (small, 24px, muted), "Ask AI to build or edit your site" in 13px --sf-text-secondary, and 2-3 example prompts below in 12px --sf-text-tertiary as clickable text (clicking one sends it as a message)
   - Example prompts for empty state: "Add a contact form section", "Improve the page typography", "Make the hero full-width"
   - Loading state (waiting for AI): three dots animation (existing), but add the elapsed time counter from Task 6

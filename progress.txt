@@ -1096,3 +1096,20 @@
   - Auto-grow max matches CSS max-height (120px) for consistent behavior
   - Most input area specs were already close from Patch F — main changes were focus ring, exact dimensions, and disabled opacity
 ---
+
+## Iteration 59 - Task 14 (PRD2): Empty state and loading states
+- Replaced generic chat placeholder with new empty state: 24px anvil icon (muted), "Ask AI to build or edit your site" text (13px), 3 clickable example prompts below
+- Example prompts: "Add a contact form section", "Improve the page typography", "Make the hero full-width" — clicking sends as message
+- Extracted `createEmptyState()` function reused in initial render and `clearChat()`
+- Created `showErrorMessage()` helper: red-tinted card (rgba red bg + border), error circle icon, error text, "Retry" button
+- Retry button removes error message and resends last user message
+- Updated non-ok HTTP response and catch block in `sendMessage()` to use `showErrorMessage()` instead of `addMessage('assistant', ...)`
+- Loading state already working from Task 6 (dots + elapsed timer + staged hints) — no changes needed
+- Added CSS: `.sf-chat-placeholder-icon`, `.sf-chat-placeholder-text`, `.sf-chat-placeholder-examples`, `.sf-chat-placeholder-example` (with hover), `.sf-chat-msg-error`, `.sf-chat-error-content`, `.sf-chat-error-icon`, updated `.sf-chat-retry-btn` with hover state
+- Files changed: src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `createEmptyState()` as a factory function allows reuse in clearChat without duplicating HTML
+  - Error messages as separate `.sf-chat-msg-error` elements (not assistant messages) keeps them visually distinct and out of message history
+  - Example prompt buttons use `sendMessage()` directly — no special wiring needed
+  - rgba-based error tinting works in both light and dark modes without separate media queries
+---

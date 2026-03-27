@@ -164,21 +164,52 @@ html, body {
   padding: 12px 14px;
 }
 
-/* Chat placeholder */
+/* Chat placeholder / empty state */
 .sf-chat-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 12px;
+  gap: 8px;
   color: var(--sf-text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   text-align: center;
+  padding: 0 24px;
 }
 
-.sf-chat-placeholder svg {
-  opacity: 0.4;
+.sf-chat-placeholder-icon {
+  opacity: 0.35;
+  margin-bottom: 4px;
+}
+
+.sf-chat-placeholder-text {
+  color: var(--sf-text-secondary);
+  font-size: 13px;
+}
+
+.sf-chat-placeholder-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.sf-chat-placeholder-example {
+  background: none;
+  border: none;
+  color: var(--sf-text-tertiary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.sf-chat-placeholder-example:hover {
+  color: var(--sf-text-primary);
+  background: var(--sf-bg-secondary);
 }
 
 /* Chat messages container */
@@ -1141,17 +1172,44 @@ html, body {
   transform: translateX(-50%) translateY(0);
 }
 
-/* Retry button in chat error messages */
+/* Error message in chat */
+.sf-chat-msg-error {
+  background: rgba(220, 50, 50, 0.06);
+  border: 0.5px solid rgba(220, 50, 50, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 6px 12px;
+  font-size: 13px;
+  color: var(--sf-text-primary);
+}
+
+.sf-chat-error-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sf-chat-error-icon {
+  color: #dc3232;
+  flex-shrink: 0;
+}
+
 .sf-chat-retry-btn {
   margin-top: 8px;
   padding: 4px 12px;
-  border: 1px solid var(--sf-border);
-  border-radius: 4px;
-  background: var(--sf-surface);
-  color: var(--sf-text-primary);
+  border: 0.5px solid rgba(220, 50, 50, 0.3);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sf-text-secondary);
   font-family: inherit;
   font-size: 11px;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sf-chat-retry-btn:hover {
+  background: rgba(220, 50, 50, 0.08);
+  color: var(--sf-text-primary);
 }
 
 /* Suggestion chips */
