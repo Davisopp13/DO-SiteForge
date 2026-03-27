@@ -7,6 +7,7 @@ import { createSidebar } from './sidebar.js';
 import { createHistory } from './history.js';
 import { createKeyboard } from './keyboard.js';
 import { createViewport } from './viewport.js';
+import { getCanvasContext } from './context.js';
 
 function init() {
   const toolbarEl = document.getElementById('sf-toolbar');
@@ -38,6 +39,20 @@ function init() {
 
   // Initialize centralized keyboard shortcuts
   const keyboard = createKeyboard({ toolbar, overlay, history, canvas, sidebar });
+
+  // Track viewport state for context provider
+  let viewportWidth = 1440;
+  let viewportMode = 'desktop';
+  window.addEventListener('forge:viewportChanged', ((e: CustomEvent) => {
+    const { preset, width } = e.detail || {};
+    viewportMode = (preset as string) || 'desktop';
+    viewportWidth = typeof width === 'number' ? width : 1440;
+  }) as EventListener);
+
+  // Wire context provider so AI chat includes canvas state in each request
+  sidebar.setContextProvider(() =>
+    getCanvasContext(canvas, overlay, viewportWidth, viewportMode, 'static')
+  );
 
   // Listen for move completions to record in history
   // Track pending drag state for history recording

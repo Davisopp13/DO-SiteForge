@@ -943,3 +943,16 @@
   - `close` event always fires after `error`, so retry logic in `close` handler covers both cases
   - Static flag injected as inline script tag before bridge.js — bridge reads it synchronously on init
 ---
+
+## Iteration N+4 - Task 4 (PRD2): Debug and fix context serialization pipeline
+- Root cause 1: `app.ts` never called `sidebar.setContextProvider()` — so `contextProvider` was always null, meaning `context` was always `{}` in every chat API request
+- Root cause 2: Shape mismatch — frontend sends `CanvasContext` shape (`selection`, `page.entries`) but server's `buildSystemPrompt` reads `PageContext` shape (`selectedElement`, `pageSummary`)
+- Fix 1: Added `import { getCanvasContext }` to `app.ts`, tracked viewport state via `forge:viewportChanged`, wired `sidebar.setContextProvider(() => getCanvasContext(canvas, overlay, viewportWidth, viewportMode, 'static'))`
+- Fix 2: Added `normalizeContext()` in `chat.ts` that maps `selection → selectedElement` and `page.entries → pageSummary`, also merges server-side `app.locals.sfProjectContext` so providers have authoritative project info
+- Files changed: src/editor/app.ts, src/server/routes/chat.ts
+- Learnings for future iterations:
+  - `setContextProvider` must be called in app.ts after canvas+overlay+viewport+sidebar are all initialized
+  - Track viewport state from `forge:viewportChanged` event in app.ts (width can be null for desktop — default to 1440)
+  - Never assume field names match between frontend types (CanvasContext) and server types (PageContext) — add explicit normalization at the API boundary
+  - Server-side `app.locals.sfProjectContext` should always override client-sent project type (server is authoritative)
+---

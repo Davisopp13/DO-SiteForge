@@ -4,6 +4,45 @@ import type { ChatMessage, PageContext } from '../ai.js';
 import type { AIProvider, ChatParams } from '../providers/types.js';
 import type { FileWatcher } from '../watcher.js';
 import { isGitRepo, getHeadRef, restoreFiles } from '../git.js';
+import type { ProjectContext } from '../project.js';
+
+/**
+ * Normalize the incoming context payload.
+ * The frontend sends CanvasContext shape; PageContext uses different field names:
+ *   CanvasContext.selection       → PageContext.selectedElement
+ *   CanvasContext.page.entries    → PageContext.pageSummary
+ * Also merges server-side project context so providers have full project info.
+ */
+function normalizeContext(raw: any, projectCtx?: ProjectContext): PageContext {
+  if (!raw || typeof raw !== 'object') return {};
+  const ctx: PageContext = {};
+
+  if (raw.viewport) ctx.viewport = raw.viewport;
+  if (raw.projectType) ctx.projectType = raw.projectType;
+  if (raw.url) ctx.url = raw.url;
+
+  // CanvasContext.selection → PageContext.selectedElement
+  if ('selection' in raw) {
+    ctx.selectedElement = raw.selection ?? null;
+  } else if ('selectedElement' in raw) {
+    ctx.selectedElement = raw.selectedElement;
+  }
+
+  // CanvasContext.page.entries → PageContext.pageSummary
+  if (raw.page?.entries) {
+    ctx.pageSummary = raw.page.entries;
+  } else if (raw.pageSummary) {
+    ctx.pageSummary = raw.pageSummary;
+  }
+
+  // Merge server-side project context (authoritative project type, tech stack, files)
+  if (projectCtx) {
+    ctx.projectContext = projectCtx;
+    if (!ctx.projectType) ctx.projectType = projectCtx.type;
+  }
+
+  return ctx;
+}
 
 /**
  * POST /api/chat
@@ -65,9 +104,10 @@ export function createChatRouter(): Router {
     }
 
     try {
+      const projectCtx = req.app.locals.sfProjectContext as ProjectContext | undefined;
       const params: ChatParams = {
         message,
-        context: context || {},
+        context: normalizeContext(context, projectCtx),
         history: Array.isArray(history) ? history : [],
         projectRoot: (req.app.locals.sfProjectDir as string) || process.cwd(),
       };

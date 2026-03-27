@@ -47,7 +47,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
 
 ### Fix 2: Selection context reaching Claude Code
 
-- [ ] **Task 4: Debug and fix context serialization pipeline**
+- [x] **Task 4: Debug and fix context serialization pipeline**
   - The problem: the chat sidebar shows "Context: .hero" in the UI but Claude Code's responses say "No selected element context was provided." The context is being displayed but not sent in the API payload.
   - Trace the full pipeline and fix the break:
     1. `src/editor/context.ts` — `getSelectionContext()` should return the selected element's full info. Add `console.log('Selection context:', result)` temporarily to verify it returns data.
