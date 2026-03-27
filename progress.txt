@@ -956,3 +956,47 @@
   - Never assume field names match between frontend types (CanvasContext) and server types (PageContext) — add explicit normalization at the API boundary
   - Server-side `app.locals.sfProjectContext` should always override client-sent project type (server is authoritative)
 ---
+
+## Iteration N+5 - Task 5 (PRD2): Pass viewport state in context
+- Added `ViewportMode` union type to `context.ts` — `'mobile' | 'tablet' | 'desktop' | 'custom'`
+- Updated `CanvasContext.viewport.mode` from `string` to `ViewportMode`
+- Added `VIEWPORT_MODES` constant and normalization in `getCanvasContext()` — invalid strings fall back to `'desktop'`
+- Updated `buildSystemPrompt()` in `ai.ts` viewport format: "The user is viewing the site at mobile width (375px)." (natural language)
+- No changes to app.ts needed — viewport params were already being tracked and passed correctly
+- Files changed: src/editor/context.ts, src/server/ai.ts, PRD.md
+- Learnings for future iterations:
+  - Viewport was already being passed as parameters from app.ts — Task 5 was mainly a type tightening + prompt format improvement
+  - Natural language prompt format ("The user is viewing the site at X width") is more AI-friendly than key-value ("Viewport: 375px (mobile)")
+  - `(VIEWPORT_MODES as string[]).includes(viewportMode)` is the TypeScript-safe way to check if a string is in a const array without type errors
+---
+---
+
+## Iteration 52 - Task 6: Increase Claude Code timeout and add progress indicators
+- Increased timeout in claude-code.ts from 120s to 180s (3 minutes)
+- Added partial text preservation on timeout: if text was already streamed, append "_(response truncated — timed out)_" and yield done instead of error event
+- Rewrote loading indicator in sidebar.ts as flex-column with two sub-elements: dots row (with elapsed timer) and hint row
+- `startLoadingTimer()` / `stopLoadingTimer()` manage setInterval that updates elapsed time and staged messages:
+  - 15s: "Claude Code is reading your project files..."
+  - 45s: "This is taking longer than usual. Complex changes may take up to 2 minutes."
+  - 120s: "Still working. If this doesn't complete, try a simpler request."
+- Added CSS: `.sf-chat-loading` is now flex-column, `.sf-chat-loading-dots` flex row, `.sf-chat-loading-timer` (11px muted, tabular-nums), `.sf-chat-loading-hint` (11px muted)
+- Files changed: src/server/providers/claude-code.ts, src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `accumulatedText` tracks text received so far — allows graceful partial response on timeout vs. hard error
+  - Two-element loading structure (dots + hint) needed a flex-direction change on .sf-chat-loading from flex-row to flex-column
+  - `font-variant-numeric: tabular-nums` prevents timer digits from causing layout shift as seconds change
+  - startLoadingTimer/stopLoadingTimer called from showLoading/hideLoading to keep lifecycle coupled
+---
+
+## Iteration 53 - Task 7: Optimize Claude Code prompt for faster responses
+- Restructured `assemblePrompt()` in `src/server/providers/claude-code.ts` to lead with USER REQUEST first
+- Added concise INSTRUCTIONS block: "Respond concisely. Make the change directly — do not explain what you plan to do first."
+- Stripped the verbose BASE_SYSTEM_PROMPT from Claude Code prompts — only passes the "Current Context" section (selected element, viewport, project info) or framework guidelines
+- Conversation history placed between instructions and context for natural flow
+- Static HTML hint ("check index.html first") was already present in `buildFrameworkGuidelines()` — no change needed in ai.ts
+- Files changed: src/server/providers/claude-code.ts
+- Learnings for future iterations:
+  - `buildSystemPrompt()` returns BASE_SYSTEM_PROMPT + framework guidelines + "--- Current Context ---" section — for Claude Code we only need the context section since Claude Code already knows how to write code
+  - Leading with the user request instead of instructions/context helps Claude Code start acting faster
+  - `systemContext.indexOf('--- Current Context ---')` extracts just the context block, avoiding ~300 tokens of boilerplate
+  - Conversation history goes before context so Claude Code has continuity before seeing current state

@@ -168,7 +168,8 @@ export function createClaudeCodeProvider(): AIProvider {
 
 /**
  * Assemble the prompt string sent to Claude Code's stdin.
- * Includes system context and conversation history.
+ * Leads with the user request for faster responses, then adds context.
+ * Kept concise to minimize thinking time and file-reading overhead.
  */
 function assemblePrompt(
   message: string,
@@ -177,28 +178,38 @@ function assemblePrompt(
 ): string {
   const parts: string[] = [];
 
-  // Instruction prefix for Claude Code
+  // Lead with the user's request — Claude Code responds faster when the action is first
+  parts.push(`USER REQUEST: ${message}`);
+
+  // Concise instructions
   parts.push(
-    'You have full write access to the project. Make the requested changes by editing files directly. Do not ask for permission — just make the changes.'
+    '\nINSTRUCTIONS: Respond concisely. Make the change directly — do not explain what you plan to do first. Read only the files you need to modify. Write complete file contents, not partial diffs.'
   );
 
-  // Add system context (page summary, selected element, project info)
-  if (systemContext) {
-    parts.push('\n' + systemContext);
-  }
-
-  // Add conversation history for context
+  // Add conversation history (if any) before context so Claude Code has conversational continuity
   if (history.length > 0) {
-    parts.push('\n--- Conversation History ---');
+    parts.push('\nCONVERSATION HISTORY:');
     for (const msg of history) {
       const label = msg.role === 'user' ? 'User' : 'Assistant';
       parts.push(`${label}: ${msg.content}`);
     }
-    parts.push('---');
   }
 
-  // The actual user message
-  parts.push(`\nUser request: ${message}`);
+  // Add context — trimmed to essentials (selected element, viewport, project type)
+  if (systemContext) {
+    // Extract only the "Current Context" section from the full system prompt
+    // to avoid sending the lengthy base prompt meant for the API provider
+    const contextIdx = systemContext.indexOf('--- Current Context ---');
+    if (contextIdx !== -1) {
+      parts.push('\n' + systemContext.slice(contextIdx));
+    } else {
+      // Fallback: extract framework guidelines if present
+      const guidelinesIdx = systemContext.indexOf('Project-specific guidelines:');
+      if (guidelinesIdx !== -1) {
+        parts.push('\n' + systemContext.slice(guidelinesIdx));
+      }
+    }
+  }
 
   return parts.join('\n');
 }

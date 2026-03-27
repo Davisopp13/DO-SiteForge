@@ -81,7 +81,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/server/providers/claude-code.ts`, `src/editor/sidebar.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 7: Optimize Claude Code prompt for faster responses**
+- [x] **Task 7: Optimize Claude Code prompt for faster responses**
   - The current prompt sent to Claude Code may be too verbose, causing it to read too many files or over-think before responding
   - In `src/server/providers/claude-code.ts`, update `assemblePrompt()`:
     - Lead with the user's request, not the context: "USER REQUEST: Change the hero background to blue.\n\nCONTEXT: The user has selected..."
