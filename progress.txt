@@ -1067,3 +1067,17 @@
   - flex gap + adjacent sibling margin-top is the cleanest way to get different spacing between same-sender vs cross-sender messages
   - CSS-only task — no TypeScript changes needed
 ---
+
+## Iteration 58 - Task 12 (PRD2): Tab bar and context indicator
+- Tab bar was already mostly correct from Patch C (40px height, 13px font-weight 500, evenly split, --sf-green active + 2px bottom border)
+- Changed inactive tab hover from --sf-overlay to --sf-bg-secondary per PRD spec
+- Added smooth opacity fade transition (150ms) on tab switch: outgoing fades out, then incoming fades in
+- First switchTab call skips animation (tabInitialized flag) so initial render is instant
+- Added `transition: opacity 0.15s ease` to .sf-sidebar-content base class
+- Context indicator was already correct: 8px vertical padding, 12px horizontal, --sf-bg-secondary bg, 11px monospace, hidden when no selection
+- Files changed: src/editor/styles.css, src/editor/sidebar.ts
+- Learnings for future iterations:
+  - `void incoming.offsetHeight` forces reflow between display change and opacity change so CSS transition triggers
+  - tabInitialized flag prevents fade animation on initial page load
+  - Most tab bar styles were already done in Patch C — this task was mainly the hover color and tab switch animation
+---

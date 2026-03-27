@@ -771,6 +771,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     setInputDisabled(false);
   }
 
+  let tabInitialized = false;
   function switchTab(tab: SidebarTab): void {
     activeTab = tab;
 
@@ -778,9 +779,27 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     chatTabBtn.classList.toggle('active', tab === 'chat');
     propsTabBtn.classList.toggle('active', tab === 'properties');
 
-    // Show/hide content
-    chatContent.style.display = tab === 'chat' ? '' : 'none';
-    propsContent.style.display = tab === 'properties' ? '' : 'none';
+    const incoming = tab === 'chat' ? chatContent : propsContent;
+    const outgoing = tab === 'chat' ? propsContent : chatContent;
+
+    if (!tabInitialized) {
+      // First call — no animation
+      outgoing.style.display = 'none';
+      incoming.style.display = '';
+      incoming.style.opacity = '1';
+      tabInitialized = true;
+    } else {
+      // Smooth opacity fade on tab switch (150ms)
+      outgoing.style.opacity = '0';
+      setTimeout(() => {
+        outgoing.style.display = 'none';
+        incoming.style.display = '';
+        incoming.style.opacity = '0';
+        // Force reflow so transition triggers
+        void incoming.offsetHeight;
+        incoming.style.opacity = '1';
+      }, 150);
+    }
 
     updateContextIndicator();
   }

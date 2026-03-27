@@ -114,7 +114,7 @@ html, body {
 }
 
 .sf-sidebar-tab:hover {
-  background: var(--sf-overlay);
+  background: var(--sf-bg-secondary);
 }
 
 .sf-sidebar-tab.active {
@@ -156,6 +156,7 @@ html, body {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  transition: opacity 0.15s ease;
 }
 
 /* Properties tab gets its own horizontal padding */

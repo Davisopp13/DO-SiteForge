@@ -140,7 +140,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 12: Tab bar and context indicator**
+- [x] **Task 12: Tab bar and context indicator**
   - Tab bar: full-width, two tabs evenly split, 40px height, 13px font weight 500
   - Active tab: --sf-green text color, 2px solid bottom border in --sf-green
   - Inactive tab: --sf-text-secondary color, transparent bottom border, hover shows --sf-bg-secondary background
