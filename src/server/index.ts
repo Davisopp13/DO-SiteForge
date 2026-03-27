@@ -12,6 +12,7 @@ import { detectProviders, type AIProvider, type ProviderDetectionResult } from '
 import { createClaudeCodeProvider } from './providers/claude-code.js';
 import { createAnthropicApiProvider } from './providers/anthropic-api.js';
 import { createFileWatcher } from './watcher.js';
+import { createLiveReloadServer } from './livereload.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +50,9 @@ export function createServer(port = 3000, target?: ProxyTarget) {
   const fileWatcher = target?.projectDir
     ? createFileWatcher(target.projectDir)
     : null;
+
+  // Create live reload server for static projects
+  const liveReload = createLiveReloadServer();
 
   // Expose config, project context, project dir, AI provider, and watcher for route handlers
   app.locals.sfConfig = config;
@@ -153,6 +157,15 @@ export function createServer(port = 3000, target?: ProxyTarget) {
   const server = app.listen(port, () => {
     console.log(`SiteForge editor running at http://localhost:${port}`);
   });
+
+  // Attach live reload WebSocket to the HTTP server
+  liveReload.attach(server);
+
+  // Start watching for file changes on static projects (framework projects use HMR)
+  const isStaticProject = target?.type === 'static';
+  if (target?.projectDir && isStaticProject) {
+    liveReload.startWatching(target.projectDir);
+  }
 
   return { app, server };
 }
