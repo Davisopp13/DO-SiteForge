@@ -573,9 +573,48 @@
     sendToEditor({ type: 'forge:select', element: getElementInfo(element) });
   });
 
+  // --- Live reload (static projects only) ---
+
+  function connectLiveReload(retriesLeft: number): void {
+    if (!(window as any).__sfIsStaticProject) return;
+
+    const wsUrl = `ws://${window.location.host}/livereload`;
+    let ws: WebSocket;
+
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch {
+      return;
+    }
+
+    ws.addEventListener('message', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data && data.type === 'reload') {
+          location.reload();
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    });
+
+    ws.addEventListener('close', () => {
+      if (retriesLeft > 0) {
+        setTimeout(() => connectLiveReload(retriesLeft - 1), 2000);
+      }
+    });
+
+    ws.addEventListener('error', () => {
+      // close event will fire after error, triggering retry
+    });
+  }
+
   // --- Initialize ---
 
   window.addEventListener('message', handleMessage);
+
+  // Connect to live reload server (no-op for framework projects)
+  connectLiveReload(10);
 
   // Signal that bridge is ready
   sendToEditor({ type: 'forge:bridgeReady' });

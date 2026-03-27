@@ -17,7 +17,7 @@ export function createBridgeInjector(): RequestHandler {
     res.send = function (body?: any) {
       const contentType = res.get('Content-Type') || '';
       if (typeof body === 'string' && contentType.includes('text/html')) {
-        body = injectBridge(body);
+        body = injectBridge(body, false);
       }
       return originalSend(body);
     };
@@ -52,17 +52,24 @@ export function createStaticWithInjection(projectDir: string): RequestHandler {
     }
 
     const html = fs.readFileSync(filePath, 'utf-8');
-    const injected = injectBridge(html);
+    // Static projects get the live reload flag set
+    const injected = injectBridge(html, true);
     res.type('text/html').send(injected);
   };
 }
 
-function injectBridge(html: string): string {
+function injectBridge(html: string, isStatic: boolean): string {
+  // For static projects, inject a flag so the bridge knows to connect to live reload
+  const staticFlag = isStatic
+    ? '<script>window.__sfIsStaticProject = true;</script>\n'
+    : '';
+  const injection = staticFlag + BRIDGE_TAG;
+
   if (html.includes('</body>')) {
-    return html.replace('</body>', `${BRIDGE_TAG}\n</body>`);
+    return html.replace('</body>', `${injection}\n</body>`);
   }
   if (html.includes('</html>')) {
-    return html.replace('</html>', `${BRIDGE_TAG}\n</html>`);
+    return html.replace('</html>', `${injection}\n</html>`);
   }
-  return html + BRIDGE_TAG;
+  return html + injection;
 }

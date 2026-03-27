@@ -29,7 +29,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/server/index.ts` (start WebSocket server alongside Express)
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 2: Bridge listens for reload messages**
+- [x] **Task 2: Bridge listens for reload messages**
   - In `src/bridge/bridge.ts`, add a WebSocket client connection to the SiteForge server
   - On page load, connect to `ws://localhost:3000/livereload` (or whatever port the editor is on)
   - When a `{ type: "reload" }` message is received, call `location.reload()` to refresh the iframe
