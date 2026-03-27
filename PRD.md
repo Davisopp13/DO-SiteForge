@@ -38,7 +38,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/bridge/bridge.ts`, `src/server/inject.ts` (pass project type to bridge)
   - Test: `npx tsc --noEmit` passes. Edit `test/fixtures/static-site/index.html` manually while SiteForge is running — iframe should refresh within 500ms.
 
-- [ ] **Task 3: Debounce reload to avoid flicker**
+- [x] **Task 3: Debounce reload to avoid flicker**
   - Claude Code often writes multiple files in rapid succession (e.g., a component file + a page file + a CSS file)
   - Debounce the reload message: collect file changes for 300ms after the first change, then send one reload message
   - This prevents the iframe from flickering through multiple reloads during a single AI response

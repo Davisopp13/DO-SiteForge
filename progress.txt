@@ -907,3 +907,39 @@
   - `.sf-chat-content` already had inline `style.padding = '0'` so CSS `.sf-sidebar-content` padding wasn't actually affecting chat — the change still cleans up CSS intent
   - Panel width is CSS-only (no JS), viewport slider min is separate (320px, unrelated to panel)
 ---
+
+## Iteration N+2 - Task 1 (PRD2): Live reload for static sites via bridge
+- Created `src/server/livereload.ts` with `createLiveReloadServer()` function
+- `LiveReloadServer` interface: `attach(httpServer)`, `startWatching(projectDir)`, `stopWatching()`
+- WebSocket server uses `ws` library, mounted at `/livereload` path, sharing the Express HTTP server
+- Chokidar watches project dir (ignores node_modules, .git, dist, .siteforge), fires `scheduleReload()` on add/change/unlink
+- Debounce: 300ms timer collects all rapid changes and sends one `{ type: "reload" }` broadcast
+- Updated `src/server/index.ts`: imports livereload, attaches WebSocket after `app.listen()`, starts watching only for `type === 'static'` projects
+- `npm install ws` + `npm install -D @types/ws` added to package.json
+- Files created: src/server/livereload.ts
+- Files changed: src/server/index.ts, package.json, package-lock.json
+- Learnings for future iterations:
+  - `WebSocketServer({ server: httpServer, path: '/livereload' })` shares the HTTP port — no second port needed
+  - Must attach WebSocket after `app.listen()` returns the http.Server instance
+  - `target.type === 'static'` gate ensures framework projects don't get live reload (they have HMR)
+  - `client.readyState === client.OPEN` check required before send to avoid errors on closed connections
+  - `ws` package exports `WebSocketServer` and `WebSocket` as named exports (not default)
+---
+
+## Iteration N+3 - Task 2 (PRD2): Bridge listens for reload messages
+- Added `connectLiveReload(retriesLeft)` function to `src/bridge/bridge.ts`
+- Checks `window.__sfIsStaticProject` flag — skips entirely for framework projects
+- Connects to `ws://${window.location.host}/livereload` using native WebSocket API
+- On `{ type: "reload" }` message: calls `location.reload()`
+- On close: retries every 2s if retries remaining (max 10)
+- Called at bridge initialization with `connectLiveReload(10)`
+- Updated `src/server/inject.ts`: `injectBridge(html, isStatic)` now accepts a flag
+- When `isStatic=true`, injects `<script>window.__sfIsStaticProject = true;</script>` before bridge tag
+- `createStaticWithInjection` passes `true`; `createBridgeInjector` passes `false`
+- Files changed: src/bridge/bridge.ts, src/server/inject.ts, PRD.md
+- Learnings for future iterations:
+  - `window.location.host` inside the iframe returns `localhost:3000` — correct for WS connection
+  - Native WebSocket API available in all modern browsers, no import needed in IIFE bridge
+  - `close` event always fires after `error`, so retry logic in `close` handler covers both cases
+  - Static flag injected as inline script tag before bridge.js — bridge reads it synchronously on init
+---
