@@ -982,6 +982,80 @@ html, body {
   background: rgba(229, 62, 62, 0.1);
 }
 
+/* Undo AI changes button */
+.sf-undo-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 8px;
+  border: 0.5px solid var(--sf-border-tertiary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sf-text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sf-undo-btn:hover:not(:disabled) {
+  background: var(--sf-bg-secondary);
+  border-color: var(--sf-border-secondary);
+}
+
+.sf-undo-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sf-undo-btn-done {
+  background: rgba(58, 125, 68, 0.1);
+  border-color: var(--sf-green);
+  color: var(--sf-green);
+  cursor: default;
+}
+
+.sf-undo-btn-error {
+  background: rgba(229, 62, 62, 0.1);
+  border-color: var(--sf-danger);
+  color: var(--sf-danger);
+}
+
+/* Dismissable git tip */
+.sf-undo-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--sf-bg-secondary);
+  color: var(--sf-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.sf-undo-warning span {
+  flex: 1;
+}
+
+.sf-undo-warning-dismiss {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--sf-text-tertiary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.sf-undo-warning-dismiss:hover {
+  color: var(--sf-text-primary);
+}
+
 /* Auto-apply toggle row */
 .sf-auto-apply-row {
   display: flex;

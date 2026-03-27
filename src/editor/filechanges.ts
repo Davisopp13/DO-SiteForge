@@ -314,7 +314,7 @@ export function renderDirectWriteChanges(changes: WatchedFileChange[], gitRef?: 
 
     undoBtn.addEventListener('click', async () => {
       undoBtn.disabled = true;
-      undoBtn.textContent = 'Undoing...';
+      undoBtn.innerHTML = `<span class="sf-apply-spinner"></span> Undoing...`;
 
       try {
         const res = await fetch('/api/chat/undo', {
@@ -328,12 +328,15 @@ export function renderDirectWriteChanges(changes: WatchedFileChange[], gitRef?: 
         };
 
         if (res.ok && data.restored) {
-          const count = data.restored.length;
           undoBtn.classList.add('sf-undo-btn-done');
-          undoBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Restored ${count} file${count !== 1 ? 's' : ''}`;
+          undoBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Changes reverted`;
           if (data.failed && data.failed.length > 0) {
             undoBtn.innerHTML += ` (${data.failed.length} failed)`;
           }
+          // Notify canvas to show toast — livereload will handle refresh for static sites
+          window.dispatchEvent(new CustomEvent('forge:undoComplete', {
+            detail: { restoredCount: data.restored.length },
+          }));
         } else {
           undoBtn.classList.add('sf-undo-btn-error');
           undoBtn.textContent = data.error || 'Undo failed';
@@ -347,12 +350,26 @@ export function renderDirectWriteChanges(changes: WatchedFileChange[], gitRef?: 
     });
 
     container.appendChild(undoBtn);
-  } else if (changes.length > 0) {
-    // No git — show warning
-    const warning = document.createElement('div');
-    warning.className = 'sf-undo-warning';
-    warning.textContent = 'Undo not available — initialize git for undo support';
-    container.appendChild(warning);
+  } else if (changes.length > 0 && !localStorage.getItem('sf-git-hint-dismissed')) {
+    // No git — show one-time dismissable tip
+    const tip = document.createElement('div');
+    tip.className = 'sf-undo-warning';
+
+    const tipText = document.createElement('span');
+    tipText.textContent = 'Tip: Initialize a git repo (git init && git add -A && git commit -m \'initial\') to enable undo for AI changes.';
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'sf-undo-warning-dismiss';
+    dismissBtn.textContent = '\u00d7';
+    dismissBtn.title = 'Dismiss';
+    dismissBtn.addEventListener('click', () => {
+      localStorage.setItem('sf-git-hint-dismissed', '1');
+      tip.remove();
+    });
+
+    tip.appendChild(tipText);
+    tip.appendChild(dismissBtn);
+    container.appendChild(tip);
   }
 
   return container;

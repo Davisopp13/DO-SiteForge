@@ -1034,3 +1034,21 @@
   - `forge:filesApplied` event decouples filechanges.ts from sidebar.ts toast function — clean separation
   - Static project flag `__sfIsStaticProject` is set in inject.ts and available in the editor frame (same window)
 ---
+
+## Iteration 56 - Task 10 (PRD2): Verify and fix git-based undo
+- Backend undo flow was already complete: chat.ts captures gitRef before session, stores snapshot, has /api/chat/undo endpoint
+- Frontend undo button in filechanges.ts was functional but needed polish fixes
+- Fixed undo button: added spinner during "Undoing..." state, changed success text to "Changes reverted" (was "Restored N files")
+- Added `forge:undoComplete` event dispatch after successful undo so sidebar can show toast
+- Added undo toast listener in sidebar.ts: "Changes reverted (N files), canvas refreshed" for static projects
+- Made non-git warning one-time dismissable: uses localStorage('sf-git-hint-dismissed'), dismiss button removes tip permanently
+- Updated warning text to match PRD: "Tip: Initialize a git repo (git init && git add -A && git commit -m 'initial') to enable undo for AI changes."
+- Added CSS for: .sf-undo-btn (with hover, disabled, done, error states), .sf-undo-warning (flex with dismiss), .sf-undo-warning-dismiss
+- Canvas refresh after undo works automatically: git checkout changes files → chokidar detects → livereload broadcasts → bridge reloads iframe
+- Files changed: src/editor/filechanges.ts, src/editor/sidebar.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - Livereload auto-detects file changes from git restore — no explicit refresh trigger needed for static projects
+  - localStorage for one-time dismissable UI hints is the simplest approach
+  - `forge:undoComplete` event decouples filechanges.ts from sidebar toast function (same pattern as forge:filesApplied)
+  - The sf-apply-spinner class can be reused for the undo button spinner (same animation)
+---

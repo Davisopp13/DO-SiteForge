@@ -116,7 +116,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
 
 ### Fix 5: Undo for AI changes
 
-- [ ] **Task 10: Verify and fix git-based undo**
+- [x] **Task 10: Verify and fix git-based undo**
   - The git-based undo from Phase 2.5 may not be working end-to-end. Trace and fix the full flow:
     1. Before a Claude Code chat session starts, `src/server/routes/chat.ts` should capture the current git HEAD ref via `getHeadRef()` from `src/server/git.ts`
     2. After the response completes, the git ref should be included in the SSE `files` event sent to the frontend

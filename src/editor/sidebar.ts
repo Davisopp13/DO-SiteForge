@@ -797,6 +797,16 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     updatePlaceholder();
   }) as EventListener);
 
+  // Show toast when AI changes are undone
+  window.addEventListener('forge:undoComplete', ((e: CustomEvent) => {
+    const count = e.detail?.restoredCount || 0;
+    if (count > 0) {
+      const isStatic = !!(window as unknown as Record<string, unknown>).__sfIsStaticProject;
+      const toastText = `Changes reverted (${count} file${count !== 1 ? 's' : ''})` + (isStatic ? ', canvas refreshed' : '');
+      showToast(toastText);
+    }
+  }) as EventListener);
+
   // Show toast when files are applied via manual Apply button
   window.addEventListener('forge:filesApplied', ((e: CustomEvent) => {
     const count = e.detail?.count || 0;
