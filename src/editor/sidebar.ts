@@ -175,11 +175,56 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     chatInputArea.style.display = 'none';
   }
 
-  // Loading indicator (three animated dots)
+  // Loading indicator (three animated dots + elapsed timer + reassurance messages)
   const loadingEl = document.createElement('div');
   loadingEl.className = 'sf-chat-loading';
   loadingEl.style.display = 'none';
-  loadingEl.innerHTML = `<span class="sf-chat-dot"></span><span class="sf-chat-dot"></span><span class="sf-chat-dot"></span>`;
+  loadingEl.innerHTML = `
+    <div class="sf-chat-loading-dots">
+      <span class="sf-chat-dot"></span><span class="sf-chat-dot"></span><span class="sf-chat-dot"></span>
+      <span class="sf-chat-loading-timer"></span>
+    </div>
+    <div class="sf-chat-loading-hint" style="display:none"></div>
+  `;
+
+  let loadingStartTime = 0;
+  let loadingTimerInterval: ReturnType<typeof setInterval> | null = null;
+
+  function startLoadingTimer(): void {
+    loadingStartTime = Date.now();
+    const timerEl = loadingEl.querySelector('.sf-chat-loading-timer') as HTMLElement;
+    const hintEl = loadingEl.querySelector('.sf-chat-loading-hint') as HTMLElement;
+
+    loadingTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - loadingStartTime) / 1000);
+      timerEl.textContent = `${elapsed}s`;
+
+      if (elapsed >= 120) {
+        hintEl.textContent = 'Still working. If this doesn\'t complete, try a simpler request.';
+        hintEl.style.display = '';
+      } else if (elapsed >= 45) {
+        hintEl.textContent = 'This is taking longer than usual. Complex changes may take up to 2 minutes.';
+        hintEl.style.display = '';
+      } else if (elapsed >= 15) {
+        hintEl.textContent = 'Claude Code is reading your project files...';
+        hintEl.style.display = '';
+      } else {
+        hintEl.style.display = 'none';
+      }
+    }, 1000);
+  }
+
+  function stopLoadingTimer(): void {
+    if (loadingTimerInterval) {
+      clearInterval(loadingTimerInterval);
+      loadingTimerInterval = null;
+    }
+    const timerEl = loadingEl.querySelector('.sf-chat-loading-timer') as HTMLElement;
+    const hintEl = loadingEl.querySelector('.sf-chat-loading-hint') as HTMLElement;
+    timerEl.textContent = '';
+    hintEl.style.display = 'none';
+    hintEl.textContent = '';
+  }
 
   // Chat input area
   const chatInputArea = document.createElement('div');
@@ -702,10 +747,12 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     chatMessagesEl.appendChild(loadingEl);
     scrollToBottom();
     setInputDisabled(true);
+    startLoadingTimer();
   }
 
   function hideLoading(): void {
     isLoading = false;
+    stopLoadingTimer();
     loadingEl.style.display = 'none';
     if (loadingEl.parentElement) {
       loadingEl.remove();

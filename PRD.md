@@ -70,7 +70,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
 
 ### Fix 3: Response time and timeouts
 
-- [ ] **Task 6: Increase Claude Code timeout and add progress indicators**
+- [x] **Task 6: Increase Claude Code timeout and add progress indicators**
   - In `src/server/providers/claude-code.ts`: increase timeout from current value to 180 seconds (3 minutes). Claude Code sometimes needs to read multiple files, plan, and write — 30s or even 120s isn't always enough for complex changes.
   - In `src/editor/sidebar.ts`: improve the loading state during AI responses:
     - Show elapsed time next to the loading dots: "Thinking... 5s", "Thinking... 12s", "Writing files... 28s"

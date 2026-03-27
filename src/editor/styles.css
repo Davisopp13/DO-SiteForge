@@ -297,11 +297,32 @@ html, body {
   color: var(--sf-text-primary);
 }
 
-/* Loading indicator — three animated dots */
+/* Loading indicator — three animated dots + elapsed timer */
 .sf-chat-loading {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
   padding: 8px 4px;
+}
+
+.sf-chat-loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sf-chat-loading-timer {
+  font-size: 11px;
+  color: var(--sf-text-tertiary);
+  margin-left: 4px;
+  min-width: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-chat-loading-hint {
+  font-size: 11px;
+  color: var(--sf-text-tertiary);
+  padding-left: 2px;
 }
 
 .sf-chat-dot {

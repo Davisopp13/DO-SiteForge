@@ -44,8 +44,8 @@ export function createClaudeCodeProvider(): AIProvider {
         child.stdin.end();
       }
 
-      // Set up timeout (120s)
-      const TIMEOUT_MS = 120_000;
+      // Set up timeout (180s)
+      const TIMEOUT_MS = 180_000;
       let timedOut = false;
       const timer = setTimeout(() => {
         timedOut = true;
@@ -69,6 +69,7 @@ export function createClaudeCodeProvider(): AIProvider {
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let accumulatedText = '';
 
       try {
         for await (const chunk of child.stdout) {
@@ -93,6 +94,9 @@ export function createClaudeCodeProvider(): AIProvider {
             // Map Claude Code stream-json events to ChatEvent
             const chatEvent = mapClaudeCodeEvent(event);
             if (chatEvent) {
+              if (chatEvent.type === 'delta') {
+                accumulatedText += chatEvent.data.text;
+              }
               yield chatEvent;
             }
           }
@@ -104,6 +108,9 @@ export function createClaudeCodeProvider(): AIProvider {
             const event = JSON.parse(buffer.trim());
             const chatEvent = mapClaudeCodeEvent(event);
             if (chatEvent) {
+              if (chatEvent.type === 'delta') {
+                accumulatedText += chatEvent.data.text;
+              }
               yield chatEvent;
             }
           } catch {
@@ -113,7 +120,13 @@ export function createClaudeCodeProvider(): AIProvider {
       } catch (err) {
         clearTimeout(timer);
         if (timedOut) {
-          yield { type: 'error', data: { message: 'Claude Code timed out after 120 seconds', errorType: 'timeout' } };
+          // If we have partial text, yield it with a truncation note instead of an error
+          if (accumulatedText) {
+            yield { type: 'delta', data: { text: '\n\n_(response truncated — timed out)_' } };
+            yield { type: 'done', data: {} };
+          } else {
+            yield { type: 'error', data: { message: 'Claude Code timed out after 3 minutes', errorType: 'timeout' } };
+          }
         } else {
           yield {
             type: 'error',
@@ -132,7 +145,13 @@ export function createClaudeCodeProvider(): AIProvider {
       const exitCode = await waitForExit(child);
 
       if (timedOut) {
-        yield { type: 'error', data: { message: 'Claude Code timed out after 120 seconds', errorType: 'timeout' } };
+        // If we have partial text, yield it with a truncation note instead of an error
+        if (accumulatedText) {
+          yield { type: 'delta', data: { text: '\n\n_(response truncated — timed out)_' } };
+          yield { type: 'done', data: {} };
+        } else {
+          yield { type: 'error', data: { message: 'Claude Code timed out after 3 minutes', errorType: 'timeout' } };
+        }
         return;
       }
 
