@@ -150,7 +150,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/editor/styles.css`, `src/editor/sidebar.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 13: Input area cleanup**
+- [x] **Task 13: Input area cleanup**
   - Input container: 12px padding, border-top 0.5px solid --sf-border-tertiary, --sf-bg-primary background
   - Textarea: 13px font, 10px 12px padding, 8px border-radius, 0.5px border --sf-border-tertiary, min-height 38px, max-height 120px (smooth auto-grow), focus ring 2px --sf-green at 30% opacity
   - Send button: 34px diameter circle, --sf-green background, white arrow icon centered, disabled state opacity 0.35

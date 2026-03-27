@@ -366,7 +366,7 @@ html, body {
   resize: none;
   border: 0.5px solid var(--sf-border-tertiary);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   font-family: inherit;
   font-size: 13px;
   line-height: 18px;
@@ -374,9 +374,9 @@ html, body {
   background: var(--sf-surface);
   outline: none;
   overflow-y: auto;
-  min-height: 36px;
-  max-height: 100px; /* ~4 lines */
-  transition: border-color 0.15s, height 0.1s ease;
+  min-height: 38px;
+  max-height: 120px;
+  transition: border-color 0.15s, box-shadow 0.15s, height 0.1s ease;
 }
 
 .sf-chat-textarea::placeholder {
@@ -385,7 +385,8 @@ html, body {
 }
 
 .sf-chat-textarea:focus {
-  border-color: var(--sf-accent);
+  border-color: var(--sf-green);
+  box-shadow: 0 0 0 2px rgba(58, 125, 68, 0.3);
 }
 
 .sf-chat-textarea:disabled {
@@ -394,8 +395,8 @@ html, body {
 }
 
 .sf-chat-send-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: none;
   border-radius: 50%;
   background: var(--sf-green);
@@ -413,7 +414,7 @@ html, body {
 }
 
 .sf-chat-send-btn.disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -1064,7 +1065,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .sf-auto-apply-label {

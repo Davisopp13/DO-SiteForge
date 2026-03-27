@@ -275,12 +275,10 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   chatContent.appendChild(chatMessagesEl);
   chatContent.appendChild(chatInputArea);
 
-  // Auto-grow textarea up to 4 lines
+  // Auto-grow textarea smoothly up to max-height (120px)
   function autoGrowTextarea(): void {
     chatTextarea.style.height = 'auto';
-    const lineHeight = 18;
-    const maxHeight = lineHeight * 4 + 16; // 4 lines + padding
-    chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, maxHeight) + 'px';
+    chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 120) + 'px';
   }
 
   chatTextarea.addEventListener('input', autoGrowTextarea);

@@ -1081,3 +1081,18 @@
   - tabInitialized flag prevents fade animation on initial page load
   - Most tab bar styles were already done in Patch C — this task was mainly the hover color and tab switch animation
 ---
+
+## Iteration N+2 - Task 13: Input area cleanup
+- Updated CSS for chat input area to match PRD spec
+- Textarea: padding 10px 12px, min-height 38px, max-height 120px, focus ring 2px --sf-green at 30% opacity (box-shadow)
+- Send button: 34px diameter circle, disabled opacity 0.35
+- Auto-apply row: margin-bottom 4px (more compact)
+- Auto-grow function updated to match 120px max-height
+- Placeholder already correct from prior iterations (13px, --sf-text-tertiary, context-aware)
+- Enter/Shift+Enter already working from prior iterations
+- Files changed: src/editor/styles.css, src/editor/sidebar.ts, PRD.md
+- Learnings for future iterations:
+  - box-shadow with rgba(58,125,68,0.3) gives a --sf-green focus ring at 30% opacity
+  - Auto-grow max matches CSS max-height (120px) for consistent behavior
+  - Most input area specs were already close from Patch F — main changes were focus ring, exact dimensions, and disabled opacity
+---
