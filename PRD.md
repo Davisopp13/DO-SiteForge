@@ -170,7 +170,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
 
 ### Fix 7: Suggestion chips
 
-- [ ] **Task 15: Smarter, context-aware suggestion chips**
+- [x] **Task 15: Smarter, context-aware suggestion chips**
   - Remove the current hardcoded suggestion logic entirely
   - New chip logic based on actual context, max 3 chips per response:
     - **After a component was created/modified** (file changes detected): "Adjust the styling", "Add responsive breakpoints", "Add another section"

@@ -672,6 +672,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     errEl.appendChild(retryBtn);
 
     chatMessagesEl.appendChild(errEl);
+    renderSuggestionChips(errEl, '', true);
     scrollToBottom();
   }
 
@@ -692,36 +693,43 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   }
 
   // Suggestion chip logic — context-aware suggestions shown after AI responses
-  function getSuggestionChips(lastAssistantContent: string): string[] {
+  function getSuggestionChips(lastAssistantContent: string, isError: boolean): string[] {
+    // After an error response
+    if (isError) {
+      return ['Try again', 'Simplify the request'];
+    }
+
     const hasFileChanges = parseFileChanges(lastAssistantContent).length > 0;
 
     // After a component/file was created or modified
     if (hasFileChanges) {
-      return ['Add more content', 'Style this differently', 'Make it responsive'];
+      return ['Adjust the styling', 'Add responsive breakpoints', 'Add another section'];
+    }
+
+    // When viewing at mobile viewport (width < 640px)
+    const isMobileViewport = document.querySelector('.sf-device-mobile') !== null;
+    const deviceFrame = document.querySelector('.sf-device-frame') as HTMLElement | null;
+    const frameWidth = deviceFrame ? deviceFrame.offsetWidth : window.innerWidth;
+    if (isMobileViewport || frameWidth < 640) {
+      return ['Fix mobile layout', 'Stack elements vertically', 'Reduce font sizes'];
     }
 
     // When an element is selected
     if (selectedElement) {
-      return ['Make this bigger', 'Change the color', 'Add animation'];
+      const tag = selectedElement.tagName || 'element';
+      return [`Edit this ${tag}`, 'Delete this element', 'Duplicate this section'];
     }
 
-    // Viewport-based suggestions
-    const viewportWidth = window.innerWidth;
-    const isMobileViewport = document.querySelector('.sf-device-mobile') !== null;
-    if (isMobileViewport || viewportWidth < 640) {
-      return ['Optimize for mobile', 'Fix mobile layout', 'Add hamburger menu'];
-    }
-
-    // Default suggestions
-    return ['Add a new section', 'Improve the design', 'Review the page'];
+    // Default — no special context
+    return ['Add a new section', 'Review the page layout', 'Improve accessibility'];
   }
 
-  function renderSuggestionChips(parentEl: HTMLElement, content: string): void {
+  function renderSuggestionChips(parentEl: HTMLElement, content: string, isError = false): void {
     // Remove any existing chips
     const existing = parentEl.querySelector('.sf-suggestion-chips');
     if (existing) existing.remove();
 
-    const chips = getSuggestionChips(content).slice(0, 3);
+    const chips = getSuggestionChips(content, isError).slice(0, 3);
     if (chips.length === 0) return;
 
     const chipsContainer = document.createElement('div');
