@@ -1035,9 +1035,9 @@ html, body {
   gap: 6px;
 }
 
-/* Toast notification */
+/* Toast notification — positioned inside #sf-canvas */
 .sf-toast {
-  position: fixed;
+  position: absolute;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(12px);
@@ -1052,6 +1052,10 @@ html, body {
   transition: opacity 0.3s, transform 0.3s;
   z-index: 9999;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .sf-toast-visible {

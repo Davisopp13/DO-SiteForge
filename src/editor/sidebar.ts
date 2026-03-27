@@ -479,6 +479,12 @@ export function createSidebar(container: HTMLElement): SidebarManager {
         const directWritesEl = renderDirectWriteChanges(directWriteChanges, directWriteGitRef);
         assistantEl.appendChild(directWritesEl);
         scrollToBottom();
+
+        // Show toast on canvas
+        const count = directWriteChanges.length;
+        const isStatic = !!(window as unknown as Record<string, unknown>).__sfIsStaticProject;
+        const toastText = `${count} file${count !== 1 ? 's' : ''} updated` + (isStatic ? ', canvas refreshed' : '');
+        showToast(toastText);
       }
 
       setInputDisabled(false);
@@ -638,16 +644,19 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   }
 
   function showToast(text: string): void {
+    const canvasEl = document.getElementById('sf-canvas');
+    const parent = canvasEl || document.body;
+
     const toast = document.createElement('div');
     toast.className = 'sf-toast';
-    toast.textContent = text;
-    document.body.appendChild(toast);
+    toast.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sf-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ${text}`;
+    parent.appendChild(toast);
     // Trigger animation
     requestAnimationFrame(() => toast.classList.add('sf-toast-visible'));
     setTimeout(() => {
       toast.classList.remove('sf-toast-visible');
       setTimeout(() => toast.remove(), 300);
-    }, 2500);
+    }, 3000);
   }
 
   // Suggestion chip logic — context-aware suggestions shown after AI responses
@@ -719,7 +728,9 @@ export function createSidebar(container: HTMLElement): SidebarManager {
           // Auto-apply: write files immediately, show toast
           const result = await applyFileChangesAuto(resolved);
           if (result.successCount > 0) {
-            showToast(`Applied ${result.successCount} file${result.successCount !== 1 ? 's' : ''}`);
+            const isStatic = !!(window as unknown as Record<string, unknown>).__sfIsStaticProject;
+            const toastText = `${result.successCount} file${result.successCount !== 1 ? 's' : ''} updated` + (isStatic ? ', canvas refreshed' : '');
+            showToast(toastText);
           }
           if (result.errors.length > 0) {
             // Show file cards with error state for failed files
@@ -784,6 +795,16 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     selectedElement = element;
     updateContextIndicator();
     updatePlaceholder();
+  }) as EventListener);
+
+  // Show toast when files are applied via manual Apply button
+  window.addEventListener('forge:filesApplied', ((e: CustomEvent) => {
+    const count = e.detail?.count || 0;
+    if (count > 0) {
+      const isStatic = !!(window as unknown as Record<string, unknown>).__sfIsStaticProject;
+      const toastText = `${count} file${count !== 1 ? 's' : ''} updated` + (isStatic ? ', canvas refreshed' : '');
+      showToast(toastText);
+    }
   }) as EventListener);
 
   // Initialize with chat tab active

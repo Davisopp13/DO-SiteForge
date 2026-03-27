@@ -1017,3 +1017,20 @@
   - Removed unused `contentFetched` variable to keep code clean
   - Both modes now have consistent card UI: filename + badge + collapsible code block
 ---
+
+## Iteration 55 - Task 9 (PRD2): File change notification toast
+- Toast now positioned inside #sf-canvas (position: absolute) instead of document.body (position: fixed) per PRD requirement
+- Added green check SVG icon inline in toast content, flex layout with gap for icon+text alignment
+- Toast duration increased from 2.5s to 3s
+- Toast shown after Claude Code direct writes: "N files updated" (+ ", canvas refreshed" for static projects)
+- Toast shown after manual Apply changes: filechanges.ts dispatches `forge:filesApplied` event, sidebar listens and shows toast
+- Toast shown after auto-apply: updated text format to match ("N files updated" instead of "Applied N files")
+- Static project detection via `window.__sfIsStaticProject` flag (already set by inject.ts for bridge live reload)
+- Added `white-space: nowrap` to toast CSS to prevent wrapping on longer messages
+- Files changed: src/editor/sidebar.ts, src/editor/filechanges.ts, src/editor/styles.css, PRD.md
+- Learnings for future iterations:
+  - `window as unknown as Record<string, unknown>` is needed for TypeScript strict mode when accessing dynamic window properties (double cast through unknown)
+  - Toast inside #sf-canvas works because canvas has `position: relative` — absolute positioning relative to canvas bounds
+  - `forge:filesApplied` event decouples filechanges.ts from sidebar.ts toast function — clean separation
+  - Static project flag `__sfIsStaticProject` is set in inject.ts and available in the editor frame (same window)
+---

@@ -105,7 +105,7 @@ Fixes are ordered by dependency — later fixes assume earlier ones work.
   - Files to modify: `src/editor/sidebar.ts`, `src/editor/filechanges.ts`
   - Test: `npx tsc --noEmit` passes. After AI writes a file, the file change card should appear below the response.
 
-- [ ] **Task 9: File change notification toast**
+- [x] **Task 9: File change notification toast**
   - When files are written (either by Claude Code directly or via "Apply changes"), show a brief toast notification at the bottom of the canvas area (not the sidebar)
   - Toast content: "2 files updated" with a green check icon
   - Toast appears for 3 seconds, then fades out

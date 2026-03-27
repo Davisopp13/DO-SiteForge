@@ -395,6 +395,9 @@ async function applyFileChanges(
     applyBtn.classList.remove('sf-apply-btn-applying');
     applyBtn.classList.add('sf-apply-btn-done');
     applyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Changes applied — ${successCount} file${successCount !== 1 ? 's' : ''} updated`;
+
+    // Notify canvas toast
+    window.dispatchEvent(new CustomEvent('forge:filesApplied', { detail: { count: successCount } }));
   } else {
     applyBtn.classList.remove('sf-apply-btn-applying');
     applyBtn.classList.add('sf-apply-btn-error');
