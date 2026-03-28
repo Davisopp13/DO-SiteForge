@@ -128,10 +128,13 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
     // --- Delete/Backspace: delete selected element ---
     if ((e.key === 'Delete' || e.key === 'Backspace') && overlay.selectedElement) {
       e.preventDefault();
+      const elementToDelete = overlay.selectedElement;
       canvas.sendToBridge({
         type: 'forge:deleteElement',
-        xpath: overlay.selectedElement.xpath,
+        xpath: elementToDelete.xpath,
       });
+      // Write-back to source file for static projects
+      sendDeleteEdit(canvas, elementToDelete.sourceLine, elementToDelete.sourceCol);
       // Deselect after delete
       window.dispatchEvent(new CustomEvent('forge:requestDeselect'));
       return;
@@ -168,4 +171,32 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
       window.removeEventListener('keydown', handleKeyDown);
     },
   };
+}
+
+function sendDeleteEdit(canvas: import('./canvas.js').CanvasManager, sourceLine: number | undefined, sourceCol: number | undefined) {
+  // Only write back for static projects
+  const iframeWin = (canvas.iframe.contentWindow as any);
+  if (!iframeWin?.__sfIsStaticProject) return;
+
+  // Skip if no source location (framework project or dynamic element)
+  if (sourceLine == null || sourceCol == null) return;
+
+  fetch('/api/edits', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      edit: {
+        type: 'delete',
+        sourceLine,
+        sourceCol,
+        filepath: '',
+      },
+    }),
+  }).then(res => {
+    if (!res.ok) {
+      console.warn('[SiteForge] Delete write-back failed:', res.status, res.statusText);
+    }
+  }).catch(err => {
+    console.warn('[SiteForge] Delete write-back error:', err);
+  });
 }

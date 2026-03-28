@@ -166,7 +166,7 @@ src/
   - Files to modify: `src/editor/overlay.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 13: Overlay sends visual edits on delete**
+- [x] **Task 13: Overlay sends visual edits on delete**
   - In `src/editor/keyboard.ts` or `src/editor/overlay.ts`: when an element is deleted (Delete/Backspace key), if it has source location, POST a `DeleteEdit` to `/api/edits`
   - Same pattern: async, static-only, skip if no sourceLine
   - Files to modify: `src/editor/keyboard.ts` or `src/editor/overlay.ts`

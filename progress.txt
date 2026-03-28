@@ -1008,3 +1008,150 @@
   - `sourceLine`/`sourceCol` are undefined (not null) when missing, matching `?: number` optional type
   - bridge.ts is IIFE so doesn't import from protocol.ts — the return type is `any`, fields are added inline
 ---
+
+## Iteration 29 - Task 4 (Phase 3A): Visual edit types
+- Created `src/server/sourcemap/types.ts` with VisualEdit union type and PatchResult
+- Types: MoveEdit, TextEdit, DeleteEdit, InsertEdit, StyleEdit all with filepath + position fields
+- PatchResult: success, filepath, linesBefore, linesAfter, error?
+- Files created: src/server/sourcemap/types.ts
+- Learnings for future iterations:
+  - Pure type file — no logic, no imports needed
+  - InsertEdit uses targetLine/targetCol (not sourceLine/sourceCol) to distinguish insertion point semantics
+---
+
+## Iteration 30 - Task 5 (Phase 3A): HTML source patcher — move edits
+- Created `src/server/sourcemap/patcher.ts` with `applyEdit(edit, projectDir): PatchResult`
+- `lineColToOffset()` converts 1-indexed line/col to character offset by summing line lengths + newline chars
+- `findTagClose()` scans forward from tag start, respects quoted attribute values, returns index of `>`
+- `applyMoveEdit()`: finds tag via offset, extracts tag text, finds/updates `style="..."` attribute
+- Style update: parses existing style into Map, sets position:relative, accumulates left/top from existing values + delta
+- No style case: inserts `style="..."` after tag name (before first whitespace/>//)
+- `parseStyle()` splits on `;`, `formatStyle()` joins with `; ` — round-trips correctly
+- Delta 0,0 → returns success immediately without reading/writing file
+- Unimplemented edit types return `{ success: false, error: '...not yet implemented' }`
+- Created `test/patcher.test.ts` with 9 tests: add style, update style, accumulate left/top, skip on delta 0, multi-line HTML, preserve surrounding HTML, wrong position error, linesBefore/After, unimplemented type
+- Files created: `src/server/sourcemap/patcher.ts`, `test/patcher.test.ts`
+- Learnings for future iterations:
+  - lineColToOffset: sum `lines[i].length + 1` for i in 0..line-2, then add col-1 — newline is always 1 char
+  - findTagClose must track quote state to avoid matching `>` inside attribute values
+  - parseStyle toLowerCase on property names for case-insensitive comparison
+  - formatStyle uses `for..of` on Map to preserve insertion order (position first via .set order)
+  - Test uses `fs.mkdtempSync` + `afterEach rmSync` for isolated temp directories
+---
+
+## Iteration 48 - Task 6 (Phase 3A): HTML source patcher — text edits
+- Extended `src/server/sourcemap/patcher.ts` with `applyTextEdit()` function
+- `applyTextEdit`: finds opening tag at sourceLine/sourceCol, skips to content after `>`, searches for `oldText`, replaces with `newText`
+- Exact string matching — if `oldText` not found in element content, throws error (returned as PatchResult error)
+- Handles multi-line text naturally since it's a substring search from tagEnd+1
+- Updated `applyEdit()` dispatch to handle `'text'` type (previously returned 'not yet implemented')
+- Updated `test/patcher.test.ts`: removed old "unimplemented edit type" test, added 7 TextEdit tests
+- Tests cover: simple replacement, surrounding HTML preserved, attribute not affected, multi-line content, not-found error, wrong position error, linesBefore/linesAfter
+- Files changed: src/server/sourcemap/patcher.ts, test/patcher.test.ts, PRD.md
+- Learnings for future iterations:
+  - Text replacement is simpler than move: just `html.indexOf(oldText, contentStart)` then slice+replace
+  - `contentStart = tagEnd + 1` (the char after `>`) is the search start — no need to find closing tag
+  - This approach correctly handles mixed content (text + child elements) if `oldText` is unique in the element
+  - 15/15 tests pass including all 7 new TextEdit cases
+---
+
+## Iteration N - Task 7: HTML source patcher — delete edits
+- Extended `patcher.ts` with `applyDeleteEdit()` and `findMatchingCloseTag()` helpers
+- `findMatchingCloseTag()`: scans forward tracking nesting depth; handles nested same-tag elements, self-closing tags, and void elements
+- `applyDeleteEdit()`: finds element at line/col, extracts tag name, refuses to delete html/head/body, finds matching close tag, removes element
+- Line cleanup: if the deleted element occupied the full line (only whitespace before/after on same line), removes the entire line(s) including trailing \n
+- Inline deletion: if element is inline (content before/after on same line), splices out just the tag text
+- VOID_ELEMENTS set at module top: area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr
+- Added 10 DeleteEdit tests covering: own-line removal, multi-line elements, nested same-tag, void elements, inline elements, body/html/head refusal, wrong position, linesBefore/linesAfter, surrounding structure preserved
+- Files changed: src/server/sourcemap/patcher.ts, test/patcher.test.ts, PRD.md
+- Learnings for future iterations:
+  - `findMatchingCloseTag` uses lowercase comparison to handle HTML case-insensitivity
+  - Depth counting: open tags (non-void, non-self-closing) increment depth; close tags decrement; when depth=0 we have the match
+  - Line cleanup: `lineStart` scans back to find line start, `lineEnd` scans forward to find \n or EOF
+  - Empty line removal: include the trailing \n in removal (`lineEnd + 1`) to avoid leaving blank lines
+  - 25/25 tests pass (all move, text, and delete tests)
+---
+
+## Iteration N+1 - Task 8 (Phase 3A): HTML source patcher — insert edits
+- Extended `src/server/sourcemap/patcher.ts` with `applyInsertEdit()` function
+- `applyInsertEdit()`: finds target element at targetLine/targetCol, determines end of element (closing tag or self-closing), extracts indentation from target's line prefix, auto-indents inserted HTML, inserts after element on new line
+- Handles both regular elements (finds matching closing tag via `findMatchingCloseTag`) and self-closing/void elements
+- Indentation: captures whitespace from `lineStart` to `tagStart`, prepends to each line of inserted HTML
+- Adds leading newline if the insertion point doesn't already have one
+- Added `InsertEdit` to import in patcher.ts; added `'insert'` case to `applyEdit()` dispatch
+- Added 7 InsertEdit tests to `test/patcher.test.ts`: after sibling element, after multi-line element, indentation preservation, after void element, wrong position error, linesBefore/linesAfter, full document structure preservation
+- Files changed: `src/server/sourcemap/patcher.ts`, `test/patcher.test.ts`, `PRD.md`
+- Learnings for future iterations:
+  - Re-used `findMatchingCloseTag` and `VOID_ELEMENTS` for insert — same detection logic as delete
+  - Indentation extraction: scan back from tagStart to line start, take leading whitespace chars
+  - Insert point is `insertAfter + 1` (one char after the `>` of the last tag)
+  - Leading newline needed only when insertion point is not already at start of line
+  - 32/32 tests pass (all move, text, delete, and insert tests)
+---
+
+## Iteration N+2 - Task 9 (Phase 3A): Visual edit API endpoint
+- Created `src/server/routes/edits.ts` with `POST /api/edits` endpoint
+- Accepts `{ edit: VisualEdit }` body, calls `applyEdit()`, returns `PatchResult`
+- Validates: projectDir present, edit object present, type is string, filepath resolves within project dir
+- For insert edits: validates targetLine/targetCol are positive integers
+- For all other edits: validates sourceLine/sourceCol are positive integers
+- Exported `resolveAndValidate` from `files.ts` so edits route can reuse it
+- Registered route in `src/server/index.ts` at `/api/edits`
+- Files created: src/server/routes/edits.ts
+- Files changed: src/server/routes/files.ts (export resolveAndValidate), src/server/index.ts
+- Learnings for future iterations:
+  - `resolveAndValidate` was a private function in files.ts — exported it for reuse; same pattern as other shared utilities
+  - InsertEdit uses targetLine/targetCol while other edits use sourceLine/sourceCol — must check edit.type === 'insert' to branch validation
+  - `applyEdit` already resolves the filepath internally via path.resolve — API layer just needs to validate it stays in project dir
+  - typecheck passes with no errors
+---
+
+## Iteration N - Task 10: Determine which file is being edited
+- In `inject.ts`: set `req.app.locals.sfCurrentFile` to the relative path (from projectDir) of every HTML file served via `createStaticWithInjection()`
+- In `edits.ts`: if `edit.filepath` is missing or empty, fall back to `req.app.locals.sfCurrentFile`; if neither is available, return 400 error; patch `edit.filepath` before calling `applyEdit()`
+- Files changed: src/server/inject.ts, src/server/routes/edits.ts
+- Learnings for future iterations:
+  - `req.app.locals` is writable from any middleware — setting sfCurrentFile in inject.ts middleware is the cleanest place since that's where HTML files are served
+  - Casting VisualEdit to `unknown as Record<string, unknown>` is needed to mutate a union type's property without TS error
+  - sfCurrentFile stores a relative path (path.relative(projectDir, filePath)) matching what resolveAndValidate expects
+---
+
+## Iteration N+3 - Task 11 (Phase 3A): Overlay sends MoveEdit on drag finish
+- Added `sendMoveEdit()` helper inside `createOverlay()` in `src/editor/overlay.ts`
+- Checks `canvas.iframe.contentWindow.__sfIsStaticProject` (same-origin, accessible) before sending
+- Skips if `sourceLine` or `sourceCol` is null (framework project or dynamic element)
+- Skips if both deltaX and deltaY are 0 (no actual movement)
+- Fire-and-forget `fetch` POST to `/api/edits` with MoveEdit body; logs warnings on failure without reverting UI
+- Called in both mouseup and mouseleave drag-finish paths (captures state before `state.drag = null`)
+- Files changed: src/editor/overlay.ts, PRD.md
+- Learnings for future iterations:
+  - `window.__sfIsStaticProject` is set in the iframe page (inject.ts), not the editor window — access via `canvas.iframe.contentWindow` (same-origin OK since both served from localhost:3000)
+  - Must capture selectedElement BEFORE resetting `state.drag` — both mouseup and mouseleave reset it
+  - filepath can be empty string — edits route falls back to `sfCurrentFile`
+  - deltaX/deltaY rounded to integers (Math.round) for clean style values
+---
+
+## Iteration N+4 - Task 12 (Phase 3A): Overlay sends TextEdit on text edit finish
+- Added `sendTextEdit()` helper inside `createOverlay()` in `src/editor/overlay.ts`
+- Called in `forge:textEditComplete` handler BEFORE `exitTextEditMode()` so `state.selectedElement` still has correct sourceLine/sourceCol
+- Checks `canvas.iframe.contentWindow.__sfIsStaticProject` and skips if sourceLine is null or text unchanged
+- Fire-and-forget fetch POST to `/api/edits` with TextEdit body; logs warnings on failure
+- Files changed: src/editor/overlay.ts, PRD.md
+- Learnings for future iterations:
+  - Call sendTextEdit before exitTextEditMode — exitTextEditMode re-queries bridge and may update selectedElement
+  - `state.selectedElement.sourceLine/sourceCol` reflect element location in source, not text location — stable across text edits
+  - Skip if oldText === newText (user may have double-clicked then clicked away without changing anything)
+---
+
+## Iteration N+5 - Task 13 (Phase 3A): Overlay sends DeleteEdit on delete
+- Added `sendDeleteEdit()` as a module-level function in `src/editor/keyboard.ts`
+- In the Delete/Backspace handler: capture `overlay.selectedElement` before deselecting, then call `sendDeleteEdit(canvas, sourceLine, sourceCol)`
+- `sendDeleteEdit` checks `canvas.iframe.contentWindow.__sfIsStaticProject` (same-origin, accessible), skips if no sourceLine/sourceCol
+- Fire-and-forget fetch POST to `/api/edits` with DeleteEdit body; logs warnings on failure
+- Same pattern as sendMoveEdit and sendTextEdit in overlay.ts
+- Files changed: src/editor/keyboard.ts
+- Learnings for future iterations:
+  - keyboard.ts already has access to `canvas` (CanvasManager) — can access `canvas.iframe.contentWindow` for static project check
+  - Capture `overlay.selectedElement` BEFORE dispatching `forge:requestDeselect` — deselect clears it
+  - Module-level helper function works cleanly since keyboard.ts doesn't need closure over overlay state for the send
+---
