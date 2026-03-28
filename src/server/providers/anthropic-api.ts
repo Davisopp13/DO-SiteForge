@@ -32,7 +32,12 @@ export function createAnthropicApiProvider(config: SiteForgeConfig): AIProvider 
       const fullContext = context ? { ...context, rootDir: context.rootDir || projectRoot } : undefined;
       const systemPrompt = buildSystemPrompt(fullContext);
 
-      const model = config.model || 'claude-sonnet-4-20250514';
+      const MODEL_MAP: Record<string, string> = {
+        sonnet: 'claude-sonnet-4-20250514',
+        opus: 'claude-opus-4-6',
+        haiku: 'claude-haiku-4-5-20251001',
+      };
+      const model = (params.model && MODEL_MAP[params.model]) || config.model || 'claude-sonnet-4-20250514';
       const maxTokens = config.maxTokens || 4096;
 
       const body = {

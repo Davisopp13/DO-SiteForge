@@ -41,7 +41,7 @@ This works for both providers:
   - Files to modify: `src/server/providers/claude-code.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 4: Anthropic API provider uses model string**
+- [x] **Task 4: Anthropic API provider uses model string**
   - In `src/server/providers/anthropic-api.ts`, read `params.model` and map it to the full model string for the API
   - Model mapping: 'sonnet' → 'claude-sonnet-4-20250514', 'opus' → 'claude-opus-4-6', 'haiku' → 'claude-haiku-4-5-20251001'
   - If no model specified, fall back to the model from config (existing behavior)
