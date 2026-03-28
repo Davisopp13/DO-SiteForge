@@ -663,7 +663,8 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   function addMessage(role: 'user' | 'assistant', content: string): HTMLElement {
     hideEmptyState();
 
-    const msg: ChatMessage = { role, content, timestamp: Date.now() };
+    const modelForMsg = role === 'assistant' ? currentModel : undefined;
+    const msg: ChatMessage = { role, content, timestamp: Date.now(), model: modelForMsg };
     messages.push(msg);
 
     const msgEl = document.createElement('div');
@@ -675,14 +676,17 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       bubble.textContent = content;
       msgEl.appendChild(bubble);
     } else {
-      // Provider badge
+      // Provider badge with model name: "Claude Code · Sonnet" or "API · Opus"
+      const modelLabel = modelForMsg
+        ? modelForMsg.charAt(0).toUpperCase() + modelForMsg.slice(1)
+        : '';
       const badgeEl = document.createElement('span');
       badgeEl.className = 'sf-provider-badge';
       if (aiStatus.provider === 'claude-code') {
-        badgeEl.textContent = 'Claude Code';
+        badgeEl.textContent = modelLabel ? `Claude Code · ${modelLabel}` : 'Claude Code';
         badgeEl.classList.add('sf-provider-badge-cc');
       } else {
-        badgeEl.textContent = 'API';
+        badgeEl.textContent = modelLabel ? `API · ${modelLabel}` : 'API';
         badgeEl.classList.add('sf-provider-badge-api');
       }
       msgEl.appendChild(badgeEl);

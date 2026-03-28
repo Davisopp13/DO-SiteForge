@@ -49,7 +49,7 @@ This works for both providers:
   - Files to modify: `src/server/providers/anthropic-api.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 5: Model badge on AI responses**
+- [x] **Task 5: Model badge on AI responses**
   - When an AI message is rendered, show both the provider badge ("Claude Code" or "API") AND the model used: "Claude Code · Sonnet" or "API · Opus"
   - The model name comes from the request, not the response (since the response doesn't include which model was used for the Claude Code provider)
   - Track which model was used per message in the `ChatMessage` type: add `model?: string` field
