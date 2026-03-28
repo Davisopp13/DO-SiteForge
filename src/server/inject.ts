@@ -53,6 +53,10 @@ export function createStaticWithInjection(projectDir: string): RequestHandler {
     }
 
     const html = fs.readFileSync(filePath, 'utf-8');
+
+    // Track which file is currently being served so /api/edits can default to it
+    req.app.locals.sfCurrentFile = path.relative(projectDir, filePath);
+
     // Annotate with source line/col before injecting bridge script
     const annotated = annotateHtml(html);
     // Static projects get the live reload flag set

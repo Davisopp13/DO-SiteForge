@@ -34,13 +34,20 @@ export function createEditsRouter(): Router {
       return;
     }
 
-    // Validate filepath
-    if (!edit.filepath || typeof edit.filepath !== 'string') {
-      res.status(400).json({ error: 'Invalid edit: missing filepath' });
-      return;
+    // Resolve filepath: use edit.filepath if provided, else fall back to sfCurrentFile
+    let filepath = edit.filepath;
+    if (!filepath || typeof filepath !== 'string') {
+      const currentFile = req.app.locals.sfCurrentFile as string | undefined;
+      if (!currentFile) {
+        res.status(400).json({ error: 'Invalid edit: missing filepath and no current file is being served' });
+        return;
+      }
+      filepath = currentFile;
+      // Patch the edit so applyEdit receives the resolved filepath
+      (edit as unknown as Record<string, unknown>).filepath = filepath;
     }
 
-    const resolved = resolveAndValidate(projectDir, edit.filepath);
+    const resolved = resolveAndValidate(projectDir, filepath);
     if (!resolved) {
       res.status(400).json({ error: 'Invalid filepath: must be within project directory' });
       return;
