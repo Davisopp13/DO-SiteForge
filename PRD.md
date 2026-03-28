@@ -190,7 +190,7 @@ src/
   - Files to modify: `src/editor/overlay.ts` (add write-back lock), potentially `src/editor/canvas.ts` (detect iframe reload)
   - Test: `npx tsc --noEmit` passes. Make two consecutive drag edits — both should write correctly to the source file.
 
-- [ ] **Task 16: Visual edit indicator**
+- [x] **Task 16: Visual edit indicator**
   - When a visual edit is successfully written to the source file, show a brief indicator on the canvas
   - Small toast/badge near the edited element: "Saved to index.html:15" in 10px monospace, fades after 2 seconds
   - If the write fails, show a subtle red indicator: "Write failed" that fades after 3 seconds

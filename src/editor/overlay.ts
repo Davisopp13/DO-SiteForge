@@ -11,6 +11,7 @@ export interface OverlayManager {
   isPreviewMode: boolean;
   writeBackLocked: boolean;
   lockWriteBack(): void;
+  showWriteToast(message: string, isError: boolean): void;
 }
 
 interface DragState {
@@ -81,6 +82,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   // Text edit mode indicator
   const textEditIndicator = createTextEditIndicator();
   overlayEl.appendChild(textEditIndicator);
+
+  // Write-back toast indicator
+  const writeToast = createWriteToastEl();
+  overlayEl.appendChild(writeToast);
+  let writeToastTimer: number | null = null;
 
   // Listen for bridge responses
   canvas.onBridgeMessage((data) => {
@@ -631,6 +637,45 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     }, 500);
   }
 
+  function showWriteToast(message: string, isError: boolean) {
+    // Position near bottom of selected element, or bottom-right corner as fallback
+    if (state.selectedElement) {
+      const rect = toOverlayCoords(state.selectedElement.boundingRect);
+      writeToast.style.left = `${rect.x}px`;
+      writeToast.style.top = `${rect.y + rect.height + 6}px`;
+      writeToast.style.transform = 'none';
+      writeToast.style.right = 'auto';
+      writeToast.style.bottom = 'auto';
+    } else {
+      // Fallback: bottom-right of overlay
+      writeToast.style.left = 'auto';
+      writeToast.style.top = 'auto';
+      writeToast.style.right = '12px';
+      writeToast.style.bottom = '12px';
+      writeToast.style.transform = 'none';
+    }
+
+    writeToast.textContent = message;
+    writeToast.style.background = isError
+      ? 'rgba(229, 62, 62, 0.92)'
+      : 'rgba(26, 26, 26, 0.88)';
+    writeToast.style.opacity = '1';
+    writeToast.style.display = 'block';
+
+    if (writeToastTimer != null) {
+      clearTimeout(writeToastTimer);
+    }
+
+    const duration = isError ? 3000 : 2000;
+    writeToastTimer = window.setTimeout(() => {
+      writeToast.style.opacity = '0';
+      writeToastTimer = window.setTimeout(() => {
+        writeToast.style.display = 'none';
+        writeToastTimer = null;
+      }, 300);
+    }, duration);
+  }
+
   // Clear the lock as soon as the iframe has reloaded and re-annotated
   window.addEventListener('forge:iframe-loaded', () => {
     state.writeBackLocked = false;
@@ -669,12 +714,18 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           deltaY: Math.round(deltaY),
         },
       }),
-    }).then(res => {
-      if (!res.ok) {
+    }).then(async res => {
+      if (res.ok) {
+        const result = await res.json();
+        const filename = result.filepath ? result.filepath.split('/').pop() : 'file';
+        showWriteToast(`Saved to ${filename}:${element.sourceLine}`, false);
+      } else {
         console.warn('[SiteForge] Move write-back failed:', res.status, res.statusText);
+        showWriteToast('Write failed', true);
       }
     }).catch(err => {
       console.warn('[SiteForge] Move write-back error:', err);
+      showWriteToast('Write failed', true);
     });
   }
 
@@ -700,12 +751,18 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           html,
         },
       }),
-    }).then(res => {
-      if (!res.ok) {
+    }).then(async res => {
+      if (res.ok) {
+        const result = await res.json();
+        const filename = result.filepath ? result.filepath.split('/').pop() : 'file';
+        showWriteToast(`Saved to ${filename}:${targetLine}`, false);
+      } else {
         console.warn('[SiteForge] Insert write-back failed:', res.status, res.statusText);
+        showWriteToast('Write failed', true);
       }
     }).catch(err => {
       console.warn('[SiteForge] Insert write-back error:', err);
+      showWriteToast('Write failed', true);
     });
   }
 
@@ -735,12 +792,18 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           newText,
         },
       }),
-    }).then(res => {
-      if (!res.ok) {
+    }).then(async res => {
+      if (res.ok) {
+        const result = await res.json();
+        const filename = result.filepath ? result.filepath.split('/').pop() : 'file';
+        showWriteToast(`Saved to ${filename}:${sourceLine}`, false);
+      } else {
         console.warn('[SiteForge] Text write-back failed:', res.status, res.statusText);
+        showWriteToast('Write failed', true);
       }
     }).catch(err => {
       console.warn('[SiteForge] Text write-back error:', err);
+      showWriteToast('Write failed', true);
     });
   }
 
@@ -752,6 +815,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     get isPreviewMode() { return state.isPreviewMode; },
     get writeBackLocked() { return state.writeBackLocked; },
     lockWriteBack,
+    showWriteToast,
   };
 
   return manager;
@@ -858,6 +922,29 @@ function createTextEditIndicator(): HTMLDivElement {
     pointer-events: none;
     z-index: 15;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  `;
+  return div;
+}
+
+function createWriteToastEl(): HTMLDivElement {
+  const div = document.createElement('div');
+  div.id = 'sf-write-toast';
+  div.style.cssText = `
+    position: absolute;
+    display: none;
+    background: rgba(26, 26, 26, 0.88);
+    color: #e8e8e8;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 10px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 16;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   `;
   return div;
 }

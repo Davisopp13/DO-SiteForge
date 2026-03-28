@@ -1155,3 +1155,47 @@
   - Capture `overlay.selectedElement` BEFORE dispatching `forge:requestDeselect` — deselect clears it
   - Module-level helper function works cleanly since keyboard.ts doesn't need closure over overlay state for the send
 ---
+
+## Iteration N - Task 14: Overlay sends visual edits on add element
+- Added `pendingInsertTarget` field to `OverlayState` to capture the hovered element's source location before insert
+- In the `mouseup` handler for the 'add' tool, saves `hoveredElement.sourceLine/sourceCol` as `pendingInsertTarget`
+- In the `forge:elementInserted` bridge message handler, calls `sendInsertEdit` with the saved target and the returned `data.html`, then clears `pendingInsertTarget`
+- Added `sendInsertEdit(targetLine, targetCol, html)` helper that POSTs `InsertEdit` to `/api/edits` (same async fire-and-forget pattern as move/text/delete edits)
+- Files changed: src/editor/overlay.ts, PRD.md
+- Learnings for future iterations:
+  - The hovered element at click time is the insertion target — must capture it before `forge:insertElement` is sent, since bridge response may arrive after hover state has changed
+  - `data.html` in the `forge:elementInserted` response contains the outerHTML of the new element — matches what `InsertEdit.html` expects
+  - Same static-project guard (`iframeWin?.__sfIsStaticProject`) applies to insert edits
+---
+
+## Iteration N+6 - Task 15 (Phase 3A): Re-annotate after source file changes
+- Re-annotation is automatic (inject.ts annotates at serve time) — the key problem is preventing stale writes during the reload cycle
+- Added `writeBackLocked: boolean` and `writeBackLockTimer: number | null` to `OverlayState` in overlay.ts
+- Added `lockWriteBack()` helper: sets `writeBackLocked = true`, clears after 500ms fallback timeout
+- Added `forge:iframe-loaded` listener: clears lock immediately when iframe finishes reloading and re-annotating
+- Added `canvas.iframe.addEventListener('load', ...)` in canvas.ts that dispatches `forge:iframe-loaded`
+- Each `sendMoveEdit`, `sendTextEdit`, `sendInsertEdit` now checks `state.writeBackLocked` before fetching, then calls `lockWriteBack()`
+- Exposed `writeBackLocked` getter and `lockWriteBack()` on `OverlayManager` interface for use by keyboard.ts
+- Updated `sendDeleteEdit` in keyboard.ts to accept `overlay` parameter, check `overlay.writeBackLocked`, call `overlay.lockWriteBack()`
+- Files changed: src/editor/overlay.ts, src/editor/canvas.ts, src/editor/keyboard.ts, PRD.md
+- Learnings for future iterations:
+  - `forge:iframe-loaded` clears the lock early (on full reload) — 500ms fallback is safety net for partial reloads
+  - `lockWriteBack` must be called BEFORE the fetch so the lock is in place even if the fetch resolves quickly
+  - Module-level helpers (sendDeleteEdit in keyboard.ts) need lock access via the OverlayManager interface — exposed as writeBackLocked + lockWriteBack()
+  - `clearTimeout` with null check before setting new timer prevents multiple concurrent timers
+---
+
+## Iteration N+7 - Task 16 (Phase 3A): Visual edit indicator
+- Added `createWriteToastEl()` factory function in overlay.ts — absolutely positioned div with dark bg, monospace 10px, opacity transition
+- Added `showWriteToast(message, isError)` function: positions near selected element's bottom edge (or fallback to bottom-right corner), sets color (dark for success, red for error), auto-hides after 2s/3s with 300ms fade-out
+- Updated all send*Edit fetches (sendMoveEdit, sendTextEdit, sendInsertEdit) to parse response JSON and call `showWriteToast("Saved to filename:line", false)` on success or `showWriteToast("Write failed", true)` on error
+- Updated `sendDeleteEdit` in keyboard.ts to call `overlay.showWriteToast(...)` after fetch
+- Exposed `showWriteToast` on `OverlayManager` interface
+- No new CSS class needed — toast uses inline styles (same as other overlay elements like positionIndicator, tagTooltip)
+- Files changed: src/editor/overlay.ts, src/editor/keyboard.ts, PRD.md
+- Learnings for future iterations:
+  - Toast uses `transition: opacity 0.3s ease` via inline style — fade triggered by setting opacity to 0, then display:none after 300ms
+  - `writeToastTimer` needs null check + clearTimeout to cancel previous toast if a new one fires quickly
+  - `res.json()` parsing in the .then handler requires making the callback `async` — `async res =>` pattern
+  - Filename extracted from filepath via `.split('/').pop()` for concise display
+---

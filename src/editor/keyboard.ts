@@ -197,11 +197,17 @@ function sendDeleteEdit(canvas: import('./canvas.js').CanvasManager, overlay: im
         filepath: '',
       },
     }),
-  }).then(res => {
-    if (!res.ok) {
+  }).then(async res => {
+    if (res.ok) {
+      const result = await res.json();
+      const filename = result.filepath ? result.filepath.split('/').pop() : 'file';
+      overlay.showWriteToast(`Saved to ${filename}:${sourceLine}`, false);
+    } else {
       console.warn('[SiteForge] Delete write-back failed:', res.status, res.statusText);
+      overlay.showWriteToast('Write failed', true);
     }
   }).catch(err => {
     console.warn('[SiteForge] Delete write-back error:', err);
+    overlay.showWriteToast('Write failed', true);
   });
 }
