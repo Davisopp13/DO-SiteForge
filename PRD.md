@@ -138,7 +138,7 @@ src/
   - Files to modify: `src/server/index.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 10: Determine which file is being edited**
+- [x] **Task 10: Determine which file is being edited**
   - The bridge knows the source line/col of an element, but doesn't know which file it came from (a static site could have multiple HTML files)
   - In `src/server/index.ts` or `src/server/proxy.ts`: track which HTML file is currently being served to the iframe. Store it as `app.locals.sfCurrentFile`
   - When the static server serves an HTML file via `createStaticWithInjection()`, record the file path
@@ -148,7 +148,7 @@ src/
 
 ### Phase 3A-4: Wire Overlay to Source Patcher
 
-- [ ] **Task 11: Overlay sends visual edits to server on drag finish**
+- [x] **Task 11: Overlay sends visual edits to server on drag finish**
   - In `src/editor/overlay.ts`: after a drag operation finishes (mouseup), if the selected element has `sourceLine` and `sourceCol`, POST a `MoveEdit` to `/api/edits`
   - Read `sourceLine` and `sourceCol` from the selected element's `ElementInfo`
   - Calculate deltaX and deltaY from the drag operation

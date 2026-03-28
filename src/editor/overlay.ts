@@ -80,6 +80,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       case 'forge:elementInfo': {
         if (data.requestType === 'atPoint') {
           state.pendingHoverRequest = false;
+          if (state.activeTool === 'preview') break;
           state.hoveredElement = data.element;
           drawHoverHighlight(data.element);
           updateCursor();
@@ -87,12 +88,14 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         break;
       }
       case 'forge:hover': {
+        if (state.activeTool === 'preview') break;
         // Direct hover from bridge (when overlay isn't intercepting)
         state.hoveredElement = data.element;
         drawHoverHighlight(data.element);
         break;
       }
       case 'forge:select': {
+        if (state.activeTool === 'preview') break;
         // Direct select from bridge (during text edit mode)
         handleSelect(data.element);
         break;
@@ -170,7 +173,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
   // Mouse events on overlay
   overlayEl.addEventListener('mousemove', (e: MouseEvent) => {
-    if (state.isTextEditing || state.isTransitioning) return;
+    if (state.activeTool === 'preview' || state.isTextEditing || state.isTransitioning) return;
 
     // Handle drag in progress
     if (state.drag) {
@@ -224,7 +227,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   });
 
   overlayEl.addEventListener('mousedown', (e: MouseEvent) => {
-    if (state.isTextEditing || state.isTransitioning) return;
+    if (state.activeTool === 'preview' || state.isTextEditing || state.isTransitioning) return;
 
     // Start drag if clicking on a selected element
     if (state.selectedElement && state.hoveredElement &&
@@ -248,6 +251,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   });
 
   overlayEl.addEventListener('mouseup', (e: MouseEvent) => {
+    if (state.activeTool === 'preview') return;
     if (state.drag) {
       // Finalize the move
       canvas.sendToBridge({
@@ -263,6 +267,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           deltaY: state.drag.currentDeltaY,
         },
       }));
+
+      // Write-back to source file for static projects
+      if (state.selectedElement) {
+        sendMoveEdit(state.selectedElement, state.drag.currentDeltaX, state.drag.currentDeltaY);
+      }
 
       hideElement(positionIndicator);
       state.drag = null;
@@ -294,7 +303,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   });
 
   overlayEl.addEventListener('dblclick', (e: MouseEvent) => {
-    if (state.isTextEditing) return;
+    if (state.activeTool === 'preview' || state.isTextEditing) return;
 
     // Double-click on a selected (or hovered) element to start text editing
     const targetElement = state.hoveredElement || state.selectedElement;
@@ -326,6 +335,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
           deltaY: state.drag.currentDeltaY,
         },
       }));
+
+      // Write-back to source file for static projects
+      if (state.selectedElement) {
+        sendMoveEdit(state.selectedElement, state.drag.currentDeltaX, state.drag.currentDeltaY);
+      }
 
       hideElement(positionIndicator);
       state.drag = null;
@@ -561,6 +575,41 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     for (const handle of resizeHandles) {
       handle.style.display = 'none';
     }
+  }
+
+  // --- Source write-back ---
+
+  function sendMoveEdit(element: ElementInfo, deltaX: number, deltaY: number) {
+    // Only write back for static projects
+    const iframeWin = (canvas.iframe.contentWindow as any);
+    if (!iframeWin?.__sfIsStaticProject) return;
+
+    // Skip if no source location (framework project or dynamic element)
+    if (element.sourceLine == null || element.sourceCol == null) return;
+
+    // Skip if no actual movement
+    if (deltaX === 0 && deltaY === 0) return;
+
+    fetch('/api/edits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        edit: {
+          type: 'move',
+          sourceLine: element.sourceLine,
+          sourceCol: element.sourceCol,
+          filepath: '',
+          deltaX: Math.round(deltaX),
+          deltaY: Math.round(deltaY),
+        },
+      }),
+    }).then(res => {
+      if (!res.ok) {
+        console.warn('[SiteForge] Move write-back failed:', res.status, res.statusText);
+      }
+    }).catch(err => {
+      console.warn('[SiteForge] Move write-back error:', err);
+    });
   }
 
   // Expose state through the manager
