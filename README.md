@@ -29,18 +29,46 @@ This will:
 
 ### Supported Project Types
 
-| Type | Detection | Dev Command |
-|------|-----------|-------------|
-| Next.js | `next` in package.json dependencies | `npx next dev --port 4200` |
-| Vite | `vite` in package.json dependencies | `npx vite --port 4200` |
-| Astro | `astro` in package.json dependencies | `npx astro dev --port 4200` |
-| Static | Has `index.html` (fallback) | Express static server |
+| Type | Detection | Dev Command | Visual Edit Write-back |
+|------|-----------|-------------|------------------------|
+| Next.js | `next` in package.json dependencies | `npx next dev --port 4200` | AI sidebar only |
+| Vite | `vite` in package.json dependencies | `npx vite --port 4200` | AI sidebar only |
+| Astro | `astro` in package.json dependencies | `npx astro dev --port 4200` | AI sidebar only |
+| Static | Has `index.html` (fallback) | Express static server | Full write-back |
 
 ### Scaffold a New Project
 
 ```bash
 forge new my-site
 ```
+
+## Visual Edit Write-back (Source Map Bridge)
+
+For **static HTML projects**, visual edits are written directly back to the source file on disk. When you drag, edit, delete, or add an element, the change is applied to the HTML file immediately — no manual code editing required.
+
+### How It Works
+
+1. When serving a static HTML file, SiteForge annotates each element with `data-sf-line` and `data-sf-col` attributes indicating its source position (line and column number in the file). These annotations are injected at serve time and never written to the source file.
+2. When you make a visual edit on the canvas, the overlay reads the element's `data-sf-line`/`data-sf-col` and sends a `POST /api/edits` request to the server.
+3. The server's source patcher locates the element in the HTML file by line/column, applies the targeted change, and writes the file back.
+4. The live reload system detects the file change and refreshes the canvas. The refreshed page is re-annotated with updated line numbers, so subsequent edits are always accurate.
+
+### Supported Visual Edit Operations
+
+| Operation | What writes to disk |
+|-----------|-------------------|
+| Drag element | Adds/updates `style="position: relative; left: Xpx; top: Ypx;"` on the tag |
+| Edit text (double-click) | Replaces the text node content between opening and closing tags |
+| Delete element (`Delete` key) | Removes the element and its children from the source |
+| Add element (`A` tool) | Inserts the new element's HTML after the target element |
+
+### Framework Project Limitations
+
+For **Next.js, Vite, and Astro projects**, visual edits are **preview-only** — they update the live DOM but do not write back to the source files. This is because framework components use JSX/TSX and build tooling that requires AST-level edits, not raw HTML patching.
+
+For framework projects, use the **AI Chat** sidebar to describe the change you want — the AI generates the correct component code and you can apply it directly.
+
+A banner is shown the first time you make a visual edit on a framework project as a reminder.
 
 ## AI Chat
 
@@ -138,9 +166,14 @@ siteforge/
 │   │   ├── config.ts         # Config loader (env vars, project/global config)
 │   │   ├── project.ts        # Project scanner (framework, deps, file list)
 │   │   ├── proxy.ts          # Dev server proxy + process management
-│   │   ├── inject.ts         # Bridge script injection middleware
+│   │   ├── inject.ts         # Bridge script injection + HTML annotation
+│   │   ├── sourcemap/
+│   │   │   ├── annotator.ts  # Adds data-sf-line/col to HTML at serve time
+│   │   │   ├── patcher.ts    # Applies visual edits to HTML source files
+│   │   │   └── types.ts      # VisualEdit union type (move, text, delete, insert)
 │   │   └── routes/
 │   │       ├── chat.ts       # POST /api/chat — SSE streaming AI responses
+│   │       ├── edits.ts      # POST /api/edits — visual edit write-back
 │   │       └── files.ts      # File operations (exists, read, write)
 │   ├── editor/               # Browser-based editor UI (vanilla TypeScript)
 │   │   ├── index.html        # Editor shell (three-panel layout)

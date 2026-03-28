@@ -205,7 +205,7 @@ src/
   - Files to modify: `src/editor/overlay.ts` or `src/editor/canvas.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 18: Update README and test**
+- [x] **Task 18: Update README and test**
   - Update README.md with: source map bridge explanation, which project types support visual edit write-back, limitations for framework projects
   - Verify full end-to-end: `forge open ./test/fixtures/static-site/` → drag element → check file on disk → text edit → check file → delete → check file → add → check file → git diff shows all changes
   - Test: `npm run typecheck && npm run build` both pass
