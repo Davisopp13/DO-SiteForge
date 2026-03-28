@@ -61,7 +61,7 @@ src/
 
 ### Phase 3A-2: Source Patcher
 
-- [ ] **Task 4: Visual edit types**
+- [x] **Task 4: Visual edit types**
   - Create `src/server/sourcemap/types.ts` with the `VisualEdit` union type:
     - `MoveEdit`: `{ type: 'move', sourceLine: number, sourceCol: number, filepath: string, deltaX: number, deltaY: number }` — element was dragged
     - `TextEdit`: `{ type: 'text', sourceLine: number, sourceCol: number, filepath: string, oldText: string, newText: string }` — text content was changed
