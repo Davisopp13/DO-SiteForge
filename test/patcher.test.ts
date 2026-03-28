@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { applyEdit } from '../src/server/sourcemap/patcher.js';
-import type { MoveEdit, TextEdit, DeleteEdit } from '../src/server/sourcemap/types.js';
+import type { MoveEdit, TextEdit, DeleteEdit, InsertEdit } from '../src/server/sourcemap/types.js';
 
 let tmpDir: string;
 
@@ -418,7 +418,7 @@ describe('applyEdit — DeleteEdit', () => {
     expect(result.linesBefore).toBeGreaterThan(result.linesAfter);
   });
 
-  it('preserves surrounding HTML structure intact after deletion', () => {
+  it('preserves surrounding HTML structure intact after deletion (full document)', () => {
     const html = '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Title</h1>\n  <p>Remove me</p>\n  <footer>Footer</footer>\n</body>\n</html>\n';
     writeHtml('index.html', html);
     const edit: DeleteEdit = {
@@ -434,5 +434,143 @@ describe('applyEdit — DeleteEdit', () => {
     expect(output).toContain('<h1>Title</h1>');
     expect(output).toContain('<footer>Footer</footer>');
     expect(output).not.toContain('Remove me');
+  });
+});
+
+describe('applyEdit — InsertEdit', () => {
+  it('inserts new element after target element on same indentation level', () => {
+    const html = '<body>\n  <p>First</p>\n  <p>Last</p>\n</body>\n';
+    writeHtml('index.html', html);
+    // Insert after <p>First</p> (line 2, col 3)
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 2,
+      targetCol: 3,
+      filepath: 'index.html',
+      html: '<p>New</p>',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('<p>First</p>');
+    expect(output).toContain('  <p>New</p>');
+    expect(output).toContain('<p>Last</p>');
+    // New element appears between First and Last
+    const firstIdx = output.indexOf('<p>First</p>');
+    const newIdx = output.indexOf('<p>New</p>');
+    const lastIdx = output.indexOf('<p>Last</p>');
+    expect(firstIdx).toBeLessThan(newIdx);
+    expect(newIdx).toBeLessThan(lastIdx);
+  });
+
+  it('inserts after a multi-line element', () => {
+    const html = '<body>\n  <div class="card">\n    <p>content</p>\n  </div>\n  <p>after</p>\n</body>\n';
+    writeHtml('index.html', html);
+    // Insert after <div class="card"> block (line 2, col 3)
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 2,
+      targetCol: 3,
+      filepath: 'index.html',
+      html: '<div class="new-card">New</div>',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('<div class="card">');
+    expect(output).toContain('  <div class="new-card">New</div>');
+    expect(output).toContain('<p>after</p>');
+    // new-card appears after the closing </div> of card
+    const cardCloseIdx = output.indexOf('</div>\n  <div class="new-card">');
+    expect(cardCloseIdx).toBeGreaterThan(-1);
+  });
+
+  it('preserves indentation of target element for inserted element', () => {
+    const html = '<body>\n    <section>\n        <h2>Title</h2>\n    </section>\n</body>\n';
+    writeHtml('index.html', html);
+    // Insert after <section> (line 2, col 5 — 4 spaces)
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 2,
+      targetCol: 5,
+      filepath: 'index.html',
+      html: '<footer>Footer</footer>',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('    <footer>Footer</footer>');
+  });
+
+  it('inserts after a self-closing (void) element', () => {
+    const html = '<div>\n  <img src="a.png">\n  <p>text</p>\n</div>\n';
+    writeHtml('index.html', html);
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 2,
+      targetCol: 3,
+      filepath: 'index.html',
+      html: '<img src="b.png">',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('src="a.png"');
+    expect(output).toContain('  <img src="b.png">');
+    expect(output).toContain('<p>text</p>');
+  });
+
+  it('returns error when wrong position given', () => {
+    writeHtml('index.html', '<div>hello</div>\n');
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 1,
+      targetCol: 5, // points to 'h', not '<'
+      filepath: 'index.html',
+      html: '<span>new</span>',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  it('reports linesBefore and linesAfter (line count increases)', () => {
+    writeHtml('index.html', '<div>\n  <p>target</p>\n</div>\n');
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 2,
+      targetCol: 3,
+      filepath: 'index.html',
+      html: '<p>inserted</p>',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    expect(result.linesAfter).toBeGreaterThan(result.linesBefore);
+  });
+
+  it('preserves all surrounding HTML when inserting', () => {
+    const html = '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Title</h1>\n  <p>Content</p>\n</body>\n</html>\n';
+    writeHtml('index.html', html);
+    const edit: InsertEdit = {
+      type: 'insert',
+      targetLine: 4,
+      targetCol: 3,
+      filepath: 'index.html',
+      html: '<h2>Subtitle</h2>',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('<!DOCTYPE html>');
+    expect(output).toContain('<h1>Title</h1>');
+    expect(output).toContain('  <h2>Subtitle</h2>');
+    expect(output).toContain('<p>Content</p>');
+    expect(output).toContain('</body>');
+    // h2 appears between h1 and p
+    const h1Idx = output.indexOf('<h1>');
+    const h2Idx = output.indexOf('<h2>');
+    const pIdx = output.indexOf('<p>');
+    expect(h1Idx).toBeLessThan(h2Idx);
+    expect(h2Idx).toBeLessThan(pIdx);
   });
 });

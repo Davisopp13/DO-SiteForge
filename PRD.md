@@ -112,7 +112,7 @@ src/
   - Files to modify: `src/server/sourcemap/patcher.ts`
   - Test: `npx tsc --noEmit` passes. Vitest test: apply a DeleteEdit, verify element is removed and surrounding structure is intact.
 
-- [ ] **Task 8: HTML source patcher — insert edits**
+- [x] **Task 8: HTML source patcher — insert edits**
   - Extend `patcher.ts` with insert edit handling
   - For `InsertEdit`:
     - Read the source file

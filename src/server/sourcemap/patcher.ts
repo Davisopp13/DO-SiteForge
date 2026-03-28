@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { VisualEdit, MoveEdit, TextEdit, DeleteEdit, PatchResult } from './types.js';
+import type { VisualEdit, MoveEdit, TextEdit, DeleteEdit, InsertEdit, PatchResult } from './types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -24,6 +24,8 @@ export function applyEdit(edit: VisualEdit, projectDir: string): PatchResult {
       patched = applyTextEdit(html, edit);
     } else if (edit.type === 'delete') {
       patched = applyDeleteEdit(html, edit);
+    } else if (edit.type === 'insert') {
+      patched = applyInsertEdit(html, edit);
     } else {
       return {
         success: false,
@@ -235,6 +237,65 @@ function applyDeleteEdit(html: string, edit: DeleteEdit): string {
 
   // Inline element — just splice out the tag text
   return html.slice(0, tagStart) + html.slice(removeEnd + 1);
+}
+
+function applyInsertEdit(html: string, edit: InsertEdit): string {
+  const tagStart = lineColToOffset(html, edit.targetLine, edit.targetCol);
+
+  if (html[tagStart] !== '<') {
+    throw new Error(
+      `Expected '<' at line ${edit.targetLine}, col ${edit.targetCol}, found '${html[tagStart]}'`
+    );
+  }
+
+  // Extract tag name
+  let nameEnd = tagStart + 1;
+  while (nameEnd < html.length && !/[\s>/]/.test(html[nameEnd])) nameEnd++;
+  const tagName = html.slice(tagStart + 1, nameEnd).toLowerCase();
+
+  const openTagEnd = findTagClose(html, tagStart);
+  if (openTagEnd === -1) {
+    throw new Error(
+      `Could not find closing '>' for tag at line ${edit.targetLine}, col ${edit.targetCol}`
+    );
+  }
+
+  // Determine the end position (after the element's closing tag or self-closing tag)
+  let insertAfter: number;
+  const isSelfClosing = html[openTagEnd - 1] === '/' || VOID_ELEMENTS.has(tagName);
+  if (isSelfClosing) {
+    insertAfter = openTagEnd;
+  } else {
+    const closeTagEnd = findMatchingCloseTag(html, openTagEnd + 1, tagName);
+    if (closeTagEnd === -1) {
+      throw new Error(
+        `Could not find matching </${tagName}> for element at line ${edit.targetLine}, col ${edit.targetCol}`
+      );
+    }
+    insertAfter = closeTagEnd;
+  }
+
+  // Determine the indentation of the target element line
+  let lineStart = tagStart;
+  while (lineStart > 0 && html[lineStart - 1] !== '\n') lineStart--;
+  const indent = html.slice(lineStart, tagStart).match(/^(\s*)/)?.[1] ?? '';
+
+  // Auto-indent the inserted HTML: prepend indent to each line
+  const insertedLines = edit.html.split('\n');
+  const indentedHtml = insertedLines
+    .map((line, i) => (i === 0 ? indent + line : indent + line))
+    .join('\n');
+
+  // Insert after the element (after insertAfter index), on a new line
+  const insertPoint = insertAfter + 1;
+  const before = html.slice(0, insertPoint);
+  const after = html.slice(insertPoint);
+
+  // Add newline before and after the inserted HTML (only if needed)
+  const needsLeadingNewline = before.length > 0 && before[before.length - 1] !== '\n';
+  const insertion = (needsLeadingNewline ? '\n' : '') + indentedHtml + '\n';
+
+  return before + insertion + after;
 }
 
 function applyMoveEdit(html: string, edit: MoveEdit): string {
