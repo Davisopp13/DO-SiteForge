@@ -172,7 +172,7 @@ src/
   - Files to modify: `src/editor/keyboard.ts` or `src/editor/overlay.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 14: Overlay sends visual edits on add element**
+- [x] **Task 14: Overlay sends visual edits on add element**
   - In `src/editor/overlay.ts`: when a new element is inserted (Add tool click), POST an `InsertEdit` to `/api/edits`
   - The `html` field is the outerHTML of the new element as created by the bridge
   - `targetLine` and `targetCol` come from the element that was clicked on (the insertion point)

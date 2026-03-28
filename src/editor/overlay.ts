@@ -29,6 +29,7 @@ interface OverlayState {
   pendingHoverRequest: boolean;
   drag: DragState | null;
   activeTool: string;
+  pendingInsertTarget: { sourceLine: number; sourceCol: number } | null;
 }
 
 export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): OverlayManager {
@@ -68,6 +69,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     pendingHoverRequest: false,
     drag: null,
     activeTool: 'select',
+    pendingInsertTarget: null,
   };
 
   // Text edit mode indicator
@@ -114,6 +116,17 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       case 'forge:elementInserted': {
         // Auto-select the newly inserted element
         handleSelect(data.element);
+
+        // Write-back to source file for static projects
+        if (state.pendingInsertTarget && data.html) {
+          sendInsertEdit(
+            state.pendingInsertTarget.sourceLine,
+            state.pendingInsertTarget.sourceCol,
+            data.html,
+          );
+        }
+        state.pendingInsertTarget = null;
+
         // Dispatch event for history tracking
         window.dispatchEvent(new CustomEvent('forge:elementInserted', {
           detail: {
@@ -295,6 +308,17 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       const iframeOffset = canvas.getIframeOffset();
       const x = e.clientX - iframeOffset.x;
       const y = e.clientY - iframeOffset.y;
+
+      // Capture target element's source location before the insert
+      if (state.hoveredElement?.sourceLine != null && state.hoveredElement?.sourceCol != null) {
+        state.pendingInsertTarget = {
+          sourceLine: state.hoveredElement.sourceLine,
+          sourceCol: state.hoveredElement.sourceCol,
+        };
+      } else {
+        state.pendingInsertTarget = null;
+      }
+
       canvas.sendToBridge({
         type: 'forge:insertElement',
         x,
@@ -618,6 +642,32 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       }
     }).catch(err => {
       console.warn('[SiteForge] Move write-back error:', err);
+    });
+  }
+
+  function sendInsertEdit(targetLine: number, targetCol: number, html: string) {
+    // Only write back for static projects
+    const iframeWin = (canvas.iframe.contentWindow as any);
+    if (!iframeWin?.__sfIsStaticProject) return;
+
+    fetch('/api/edits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        edit: {
+          type: 'insert',
+          targetLine,
+          targetCol,
+          filepath: '',
+          html,
+        },
+      }),
+    }).then(res => {
+      if (!res.ok) {
+        console.warn('[SiteForge] Insert write-back failed:', res.status, res.statusText);
+      }
+    }).catch(err => {
+      console.warn('[SiteForge] Insert write-back error:', err);
     });
   }
 
