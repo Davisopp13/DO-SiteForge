@@ -126,7 +126,7 @@ src/
 
 ### Phase 3A-3: Edit API Route
 
-- [ ] **Task 9: Visual edit API endpoint**
+- [x] **Task 9: Visual edit API endpoint**
   - Create `src/server/routes/edits.ts` with `POST /api/edits` endpoint
   - Request body: `{ edit: VisualEdit }` — a single visual edit operation
   - Calls `applyEdit()` from patcher.ts, returns the `PatchResult`

@@ -7,6 +7,7 @@ import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
 import { loadConfig, hasApiKey, setApiKey, setModel, type SiteForgeConfig } from './config.js';
 import { createChatRouter } from './routes/chat.js';
 import { createFilesRouter } from './routes/files.js';
+import { createEditsRouter } from './routes/edits.js';
 import { scanProject, type ProjectContext } from './project.js';
 import { detectProviders, type AIProvider, type ProviderDetectionResult } from './providers/types.js';
 import { createClaudeCodeProvider } from './providers/claude-code.js';
@@ -100,6 +101,9 @@ export function createServer(port = 3000, target?: ProxyTarget) {
 
   // API: File operations (exists, read, write)
   app.use('/api/files', createFilesRouter());
+
+  // API: Visual edits (apply source map patch to HTML file)
+  app.use('/api/edits', createEditsRouter());
 
   // API: Check AI config status
   app.get('/api/config/status', (_req, res) => {

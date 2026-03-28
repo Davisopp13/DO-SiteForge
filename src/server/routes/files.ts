@@ -7,7 +7,7 @@ import path from 'node:path';
  * Validates that a file path resolves within the project root.
  * Prevents path traversal attacks (e.g., ../../etc/passwd).
  */
-function resolveAndValidate(projectDir: string, filepath: string): string | null {
+export function resolveAndValidate(projectDir: string, filepath: string): string | null {
   if (!filepath || typeof filepath !== 'string') return null;
 
   // Normalize and resolve the path relative to project dir
