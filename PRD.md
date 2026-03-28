@@ -72,7 +72,7 @@ src/
   - Files to create: `src/server/sourcemap/types.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 5: HTML source patcher — move edits**
+- [x] **Task 5: HTML source patcher — move edits**
   - Create `src/server/sourcemap/patcher.ts` with `applyEdit(edit: VisualEdit, projectDir: string): PatchResult`
   - For `MoveEdit`:
     - Read the source file
