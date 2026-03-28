@@ -451,6 +451,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
           message: trimmed,
           context: context || {},
           history: historyForApi,
+          model: currentModel,
         }),
       });
 

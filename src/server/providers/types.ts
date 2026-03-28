@@ -10,6 +10,7 @@ export interface ChatParams {
   context: PageContext;
   history: ChatMessage[];
   projectRoot: string;
+  model?: string;
 }
 
 export interface ChatEvent {

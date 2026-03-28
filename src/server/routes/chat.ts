@@ -69,10 +69,11 @@ export function createChatRouter(): Router {
       return;
     }
 
-    const { message, context, history } = req.body as {
+    const { message, context, history, model } = req.body as {
       message?: string;
       context?: PageContext;
       history?: ChatMessage[];
+      model?: string;
     };
 
     if (!message || typeof message !== 'string') {
@@ -110,6 +111,7 @@ export function createChatRouter(): Router {
         context: normalizeContext(context, projectCtx),
         history: Array.isArray(history) ? history : [],
         projectRoot: (req.app.locals.sfProjectDir as string) || process.cwd(),
+        model: typeof model === 'string' ? model : undefined,
       };
 
       for await (const event of provider.streamChat(params)) {
