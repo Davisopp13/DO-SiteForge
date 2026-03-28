@@ -126,6 +126,15 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
         break;
       }
       case 'forge:textEditComplete': {
+        // Write-back to source file before exiting (selectedElement still has correct source location)
+        if (state.selectedElement?.sourceLine != null && state.selectedElement?.sourceCol != null) {
+          sendTextEdit(
+            state.selectedElement.sourceLine,
+            state.selectedElement.sourceCol,
+            data.oldText,
+            data.newText,
+          );
+        }
         // Bridge signals that text editing has finished
         exitTextEditMode();
         // Dispatch event for history tracking
@@ -609,6 +618,36 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
       }
     }).catch(err => {
       console.warn('[SiteForge] Move write-back error:', err);
+    });
+  }
+
+  function sendTextEdit(sourceLine: number, sourceCol: number, oldText: string, newText: string) {
+    // Only write back for static projects
+    const iframeWin = (canvas.iframe.contentWindow as any);
+    if (!iframeWin?.__sfIsStaticProject) return;
+
+    // Skip if text didn't change
+    if (oldText === newText) return;
+
+    fetch('/api/edits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        edit: {
+          type: 'text',
+          sourceLine,
+          sourceCol,
+          filepath: '',
+          oldText,
+          newText,
+        },
+      }),
+    }).then(res => {
+      if (!res.ok) {
+        console.warn('[SiteForge] Text write-back failed:', res.status, res.statusText);
+      }
+    }).catch(err => {
+      console.warn('[SiteForge] Text write-back error:', err);
     });
   }
 

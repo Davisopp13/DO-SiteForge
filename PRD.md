@@ -158,7 +158,7 @@ src/
   - Files to modify: `src/editor/overlay.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 12: Overlay sends visual edits on text edit finish**
+- [x] **Task 12: Overlay sends visual edits on text edit finish**
   - In `src/editor/overlay.ts`: after inline text editing completes (blur/escape), if the element has source location, POST a `TextEdit` to `/api/edits`
   - `oldText` comes from the original element info captured before editing started
   - `newText` comes from the updated element info after editing finishes
