@@ -20,9 +20,14 @@ export function createClaudeCodeProvider(): AIProvider {
       const systemContext = buildSystemPrompt(context);
       const prompt = assemblePrompt(message, systemContext, history);
 
+      const spawnArgs = ['--print', '--output-format', 'stream-json', '--verbose', '--dangerously-skip-permissions'];
+      if (params.model) {
+        spawnArgs.push('--model', params.model);
+      }
+
       let child: ChildProcess;
       try {
-        child = spawn('claude', ['--print', '--output-format', 'stream-json', '--verbose', '--dangerously-skip-permissions'], {
+        child = spawn('claude', spawnArgs, {
           cwd: projectRoot,
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env },

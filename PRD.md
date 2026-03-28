@@ -27,14 +27,14 @@ This works for both providers:
   - Files to modify: `src/editor/sidebar.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 2: Pass model to chat API route**
+- [x] **Task 2: Pass model to chat API route**
   - In `src/editor/sidebar.ts`, include the selected model in the POST body to `/api/chat`: `{ message, context, history, model: 'sonnet' | 'opus' | 'haiku' }`
   - In `src/server/routes/chat.ts`, read `req.body.model` and pass it to the provider's `streamChat()` call via `ChatParams`
   - Add `model?: string` to the `ChatParams` interface in `src/server/providers/types.ts`
   - Files to modify: `src/editor/sidebar.ts`, `src/server/routes/chat.ts`, `src/server/providers/types.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 3: Claude Code provider uses model flag**
+- [x] **Task 3: Claude Code provider uses model flag**
   - In `src/server/providers/claude-code.ts`, read `params.model` and add `--model ${model}` to the spawn args
   - Model alias mapping: 'sonnet' → 'sonnet', 'opus' → 'opus', 'haiku' → 'haiku' (Claude Code accepts these aliases directly)
   - If no model is specified, omit the `--model` flag entirely (Claude Code uses its own default)
