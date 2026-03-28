@@ -52,7 +52,7 @@ src/
   - Files to modify: `src/server/inject.ts`
   - Test: `npx tsc --noEmit` passes. Open the static test fixture, inspect an element in browser devtools — it should have `data-sf-line` and `data-sf-col` attributes.
 
-- [ ] **Task 3: Bridge reports source location with element info**
+- [x] **Task 3: Bridge reports source location with element info**
   - Update `src/bridge/bridge.ts`: when `getElementInfo()` builds an `ElementInfo` object, include `sourceLine` and `sourceCol` fields read from `data-sf-line` and `data-sf-col`
   - If the attributes don't exist (framework project, or a dynamically inserted element), `sourceLine` and `sourceCol` are `null`
   - Update `ElementInfo` type in `src/bridge/protocol.ts` to include `sourceLine?: number` and `sourceCol?: number`

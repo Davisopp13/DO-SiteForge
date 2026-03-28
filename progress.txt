@@ -987,3 +987,24 @@
   - `out.push(ch); col++` pattern via `advance()` keeps tracking in sync cleanly
   - Initial test had wrong expected column (16 vs 15) — always trace through manually for same-line column tests
 ---
+
+## Iteration 27 - Task 2 (Phase 3A): Inject annotations during static file serving
+- Updated `src/server/inject.ts` to import `annotateHtml` from `./sourcemap/annotator.js`
+- In `createStaticWithInjection()`: call `annotateHtml(html)` on the raw HTML before passing to `injectBridge()`
+- Annotations (data-sf-line, data-sf-col) are added at serve time; source files remain clean
+- Files changed: src/server/inject.ts
+- Learnings for future iterations:
+  - Import path uses `.js` extension (not `.ts`) per ESM convention — TypeScript resolves `.ts` from `.js` imports
+  - Annotation runs before bridge injection so data-sf-* attributes are present in the DOM when bridge.ts runs
+  - createBridgeInjector (for proxied projects) intentionally NOT updated — annotation only for static projects
+---
+
+## Iteration 28 - Task 3 (Phase 3A): Bridge reports source location with element info
+- Updated `ElementInfo` in `src/bridge/protocol.ts`: added `sourceLine?: number` and `sourceCol?: number` fields
+- Updated `getElementInfo()` in `src/bridge/bridge.ts`: reads `data-sf-line` and `data-sf-col` attributes from the element, parses them as integers, includes as `sourceLine`/`sourceCol` in returned object (undefined if attributes missing)
+- Files changed: `src/bridge/protocol.ts`, `src/bridge/bridge.ts`
+- Learnings for future iterations:
+  - `element.getAttribute()` returns null if attribute missing — `!== null` check before parseInt, then assign undefined
+  - `sourceLine`/`sourceCol` are undefined (not null) when missing, matching `?: number` optional type
+  - bridge.ts is IIFE so doesn't import from protocol.ts — the return type is `any`, fields are added inline
+---

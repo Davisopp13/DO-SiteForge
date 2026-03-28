@@ -58,12 +58,19 @@
     const rect = element.getBoundingClientRect();
     const computed = window.getComputedStyle(element);
 
+    const sfLine = element.getAttribute('data-sf-line');
+    const sfCol = element.getAttribute('data-sf-col');
+    const sourceLine = sfLine !== null ? parseInt(sfLine, 10) : undefined;
+    const sourceCol = sfCol !== null ? parseInt(sfCol, 10) : undefined;
+
     return {
       tagName: element.tagName.toLowerCase(),
       id: element.id || '',
       className: typeof element.className === 'string' ? element.className : '',
       xpath: getXPath(element),
       textContent: (element.textContent || '').trim().substring(0, 200),
+      sourceLine,
+      sourceCol,
       boundingRect: {
         x: rect.x,
         y: rect.y,

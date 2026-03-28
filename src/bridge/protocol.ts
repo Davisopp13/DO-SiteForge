@@ -15,6 +15,8 @@ export interface ElementInfo {
   xpath: string;
   textContent: string;
   boundingRect: ElementRect;
+  sourceLine?: number;
+  sourceCol?: number;
   computedStyles: {
     backgroundColor: string;
     color: string;
