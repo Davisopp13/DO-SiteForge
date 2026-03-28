@@ -99,7 +99,7 @@ src/
   - Files to modify: `src/server/sourcemap/patcher.ts`
   - Test: `npx tsc --noEmit` passes. Vitest test: apply a TextEdit, verify text is replaced without affecting surrounding HTML.
 
-- [ ] **Task 7: HTML source patcher — delete edits**
+- [x] **Task 7: HTML source patcher — delete edits**
   - Extend `patcher.ts` with delete edit handling
   - For `DeleteEdit`:
     - Read the source file

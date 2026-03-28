@@ -1,6 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { VisualEdit, MoveEdit, TextEdit, PatchResult } from './types.js';
+import type { VisualEdit, MoveEdit, TextEdit, DeleteEdit, PatchResult } from './types.js';
+
+const VOID_ELEMENTS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
 
 export function applyEdit(edit: VisualEdit, projectDir: string): PatchResult {
   const absPath = path.resolve(projectDir, edit.filepath);
@@ -17,6 +22,8 @@ export function applyEdit(edit: VisualEdit, projectDir: string): PatchResult {
       patched = applyMoveEdit(html, edit);
     } else if (edit.type === 'text') {
       patched = applyTextEdit(html, edit);
+    } else if (edit.type === 'delete') {
+      patched = applyDeleteEdit(html, edit);
     } else {
       return {
         success: false,
@@ -120,6 +127,114 @@ function applyTextEdit(html: string, edit: TextEdit): string {
   }
 
   return html.slice(0, pos) + edit.newText + html.slice(pos + edit.oldText.length);
+}
+
+/**
+ * Scans forward from searchFrom to find the matching closing tag for tagName.
+ * Returns the index of the closing '>' of the matching close tag, or -1 if not found.
+ * Handles nested elements of the same tag name correctly.
+ */
+function findMatchingCloseTag(html: string, searchFrom: number, tagName: string): number {
+  const lower = html.toLowerCase();
+  const openPattern = '<' + tagName;
+  const closePattern = '</' + tagName;
+  let i = searchFrom;
+  let depth = 1;
+
+  while (i < lower.length && depth > 0) {
+    if (lower[i] !== '<') { i++; continue; }
+
+    // Check for close tag: </tagname followed by whitespace or >
+    if (lower.startsWith(closePattern, i)) {
+      const afterName = i + closePattern.length;
+      if (afterName >= lower.length || /[\s>]/.test(lower[afterName])) {
+        let j = afterName;
+        while (j < html.length && html[j] !== '>') j++;
+        depth--;
+        if (depth === 0) return j;
+        i = j + 1;
+        continue;
+      }
+    }
+
+    // Check for open tag of the same name (to track nesting depth)
+    if (!VOID_ELEMENTS.has(tagName) && lower.startsWith(openPattern, i)) {
+      const afterName = i + openPattern.length;
+      if (afterName < lower.length && /[\s>/]/.test(lower[afterName])) {
+        const tc = findTagClose(html, i);
+        if (tc !== -1) {
+          // Only increment depth if not self-closing
+          if (html[tc - 1] !== '/') depth++;
+          i = tc + 1;
+          continue;
+        }
+      }
+    }
+
+    i++;
+  }
+
+  return -1;
+}
+
+function applyDeleteEdit(html: string, edit: DeleteEdit): string {
+  const tagStart = lineColToOffset(html, edit.sourceLine, edit.sourceCol);
+
+  if (html[tagStart] !== '<') {
+    throw new Error(
+      `Expected '<' at line ${edit.sourceLine}, col ${edit.sourceCol}, found '${html[tagStart]}'`
+    );
+  }
+
+  // Extract tag name
+  let nameEnd = tagStart + 1;
+  while (nameEnd < html.length && !/[\s>/]/.test(html[nameEnd])) nameEnd++;
+  const tagName = html.slice(tagStart + 1, nameEnd).toLowerCase();
+
+  if (tagName === 'html' || tagName === 'head' || tagName === 'body') {
+    throw new Error(`Refusing to delete <${tagName}> element`);
+  }
+
+  const openTagEnd = findTagClose(html, tagStart);
+  if (openTagEnd === -1) {
+    throw new Error(
+      `Could not find closing '>' for tag at line ${edit.sourceLine}, col ${edit.sourceCol}`
+    );
+  }
+
+  const isSelfClosing = html[openTagEnd - 1] === '/' || VOID_ELEMENTS.has(tagName);
+
+  let removeEnd: number;
+  if (isSelfClosing) {
+    removeEnd = openTagEnd;
+  } else {
+    removeEnd = findMatchingCloseTag(html, openTagEnd + 1, tagName);
+    if (removeEnd === -1) {
+      throw new Error(
+        `Could not find matching </${tagName}> for element at line ${edit.sourceLine}, col ${edit.sourceCol}`
+      );
+    }
+  }
+
+  // Find the start of the line containing tagStart
+  let lineStart = tagStart;
+  while (lineStart > 0 && html[lineStart - 1] !== '\n') lineStart--;
+
+  // Find the end of the line containing removeEnd (\n position or end of string)
+  let lineEnd = removeEnd + 1;
+  while (lineEnd < html.length && html[lineEnd] !== '\n') lineEnd++;
+
+  const linePrefix = html.slice(lineStart, tagStart);
+  const lineSuffix = html.slice(removeEnd + 1, lineEnd);
+
+  if (linePrefix.trim() === '' && lineSuffix.trim() === '') {
+    // The element occupied the full line(s) — remove the entire line(s) including the trailing \n
+    const lineEndIncl = lineEnd < html.length ? lineEnd + 1 : lineEnd;
+    return html.slice(0, lineStart) + html.slice(lineEndIncl);
+  }
+
+  // Inline element — just splice out the tag text
+  return html.slice(0, tagStart) + html.slice(removeEnd + 1);
 }
 
 function applyMoveEdit(html: string, edit: MoveEdit): string {

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { applyEdit } from '../src/server/sourcemap/patcher.js';
-import type { MoveEdit, TextEdit } from '../src/server/sourcemap/types.js';
+import type { MoveEdit, TextEdit, DeleteEdit } from '../src/server/sourcemap/types.js';
 
 let tmpDir: string;
 
@@ -282,5 +282,157 @@ describe('applyEdit — TextEdit', () => {
     const result = applyEdit(edit, tmpDir);
     expect(result.success).toBe(true);
     expect(result.linesBefore).toBe(result.linesAfter); // same line count
+  });
+});
+
+describe('applyEdit — DeleteEdit', () => {
+  it('removes a simple element on its own line', () => {
+    writeHtml('index.html', '<body>\n  <p>Hello</p>\n  <p>other</p>\n</body>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 2,
+      sourceCol: 3,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toBe('<body>\n  <p>other</p>\n</body>\n');
+    expect(output).not.toContain('Hello');
+  });
+
+  it('removes a multi-line element and its children', () => {
+    const html = '<body>\n  <div class="card">\n    <p>content</p>\n  </div>\n  <p>after</p>\n</body>\n';
+    writeHtml('index.html', html);
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 2,
+      sourceCol: 3,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toBe('<body>\n  <p>after</p>\n</body>\n');
+    expect(output).not.toContain('card');
+    expect(output).not.toContain('content');
+  });
+
+  it('handles nested elements of the same tag name correctly', () => {
+    const html = '<ul>\n  <li>one\n    <ul>\n      <li>nested</li>\n    </ul>\n  </li>\n  <li>two</li>\n</ul>\n';
+    writeHtml('index.html', html);
+    // Delete the outer <li> (line 2, col 3)
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 2,
+      sourceCol: 3,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).not.toContain('nested');
+    expect(output).toContain('<li>two</li>');
+  });
+
+  it('removes a void element (self-closing) on its own line', () => {
+    writeHtml('index.html', '<div>\n  <br>\n  <p>text</p>\n</div>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 2,
+      sourceCol: 3,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toBe('<div>\n  <p>text</p>\n</div>\n');
+  });
+
+  it('removes an inline element without removing the whole line', () => {
+    writeHtml('index.html', '<p>Hello <strong>world</strong> today</p>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 1,
+      sourceCol: 10, // <strong> starts at col 10
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('Hello  today'); // space where <strong>world</strong> was
+    expect(output).not.toContain('<strong>');
+  });
+
+  it('refuses to delete <body> and returns an error', () => {
+    writeHtml('index.html', '<html>\n<body>\n  <p>content</p>\n</body>\n</html>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 2,
+      sourceCol: 1,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Refusing/);
+    // File should be unchanged
+    expect(readHtml('index.html')).toContain('<body>');
+  });
+
+  it('refuses to delete <html> and returns an error', () => {
+    writeHtml('index.html', '<html>\n<body></body>\n</html>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 1,
+      sourceCol: 1,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Refusing/);
+  });
+
+  it('returns error when wrong position given', () => {
+    writeHtml('index.html', '<div>hello</div>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 1,
+      sourceCol: 5, // points to 'h', not '<'
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  it('reports correct linesBefore and linesAfter (line count decreases)', () => {
+    writeHtml('index.html', '<div>\n  <p>remove me</p>\n  <p>keep</p>\n</div>\n');
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 2,
+      sourceCol: 3,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    expect(result.linesBefore).toBeGreaterThan(result.linesAfter);
+  });
+
+  it('preserves surrounding HTML structure intact after deletion', () => {
+    const html = '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Title</h1>\n  <p>Remove me</p>\n  <footer>Footer</footer>\n</body>\n</html>\n';
+    writeHtml('index.html', html);
+    const edit: DeleteEdit = {
+      type: 'delete',
+      sourceLine: 5,
+      sourceCol: 3,
+      filepath: 'index.html',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('<!DOCTYPE html>');
+    expect(output).toContain('<h1>Title</h1>');
+    expect(output).toContain('<footer>Footer</footer>');
+    expect(output).not.toContain('Remove me');
   });
 });
