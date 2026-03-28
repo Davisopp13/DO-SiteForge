@@ -971,3 +971,19 @@
   - Model fetch done inside the aiStatus success branch so it only runs when AI is available (model selector is shown)
   - `applyModelAlias` can be defined as a function declaration below the closures it uses — all are in scope when called at runtime
 ---
+
+## Iteration 26 - Task 1 (Phase 3A): HTML line/column annotator
+- Created `src/server/sourcemap/annotator.ts` with `annotateHtml(html: string): string`
+- Character-by-character scanner: tracks `line` and `col` (both 1-indexed), increments line on `\n`, resets col to 1
+- Skips: closing tags (`</`), comments/DOCTYPE (`<!`), processing instructions (`<?`), and the SKIP_TAGS set (html, head, body, script, style, link, meta)
+- For opening tags: parses tag name, validates next char is whitespace/`>`/`/`, inserts ` data-sf-line="N" data-sf-col="N"` right after tag name
+- Uses output array + `.join('')` for efficiency; col tracking for consumed `<tagName` done with `col += 1 + tagName.length`
+- Self-closing void tags (br, img, hr, input) annotated correctly because they have valid `>` or `/` after name
+- Created `test/annotator.test.ts` with 14 tests covering: basic case, multiline, indentation, skip tags, closing tags, comments, DOCTYPE, void tags, whitespace preservation, same-line multiple tags, multi-line attributes, empty string, realistic snippet
+- Files changed: `src/server/sourcemap/annotator.ts` (new), `test/annotator.test.ts` (new)
+- Learnings for future iterations:
+  - Tag name never contains newlines so `col += 1 + tagName.length` is sufficient (no line tracking needed for consumed tag name chars)
+  - col tracking is based on INPUT positions, not OUTPUT — the inserted attributes don't affect position tracking of subsequent elements
+  - `out.push(ch); col++` pattern via `advance()` keeps tracking in sync cleanly
+  - Initial test had wrong expected column (16 vs 15) — always trace through manually for same-line column tests
+---
