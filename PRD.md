@@ -198,7 +198,7 @@ src/
   - Files to modify: `src/editor/overlay.ts`, `src/editor/styles.css`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 17: Framework project indicator**
+- [x] **Task 17: Framework project indicator**
   - For non-static projects, show a subtle indicator when the user makes a visual edit: "Visual edits are preview-only for Next.js projects. Use the AI sidebar to make code changes."
   - Show this once per session on the first visual edit, as a dismissable info bar at the top of the canvas area
   - After dismissal, don't show it again for the rest of the session

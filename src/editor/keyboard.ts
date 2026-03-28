@@ -176,7 +176,10 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
 function sendDeleteEdit(canvas: import('./canvas.js').CanvasManager, overlay: import('./overlay.js').OverlayManager, sourceLine: number | undefined, sourceCol: number | undefined) {
   // Only write back for static projects
   const iframeWin = (canvas.iframe.contentWindow as any);
-  if (!iframeWin?.__sfIsStaticProject) return;
+  if (!iframeWin?.__sfIsStaticProject) {
+    overlay.showFrameworkIndicator();
+    return;
+  }
 
   // Skip if no source location (framework project or dynamic element)
   if (sourceLine == null || sourceCol == null) return;

@@ -12,6 +12,7 @@ export interface OverlayManager {
   writeBackLocked: boolean;
   lockWriteBack(): void;
   showWriteToast(message: string, isError: boolean): void;
+  showFrameworkIndicator(): void;
 }
 
 interface DragState {
@@ -87,6 +88,16 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   const writeToast = createWriteToastEl();
   overlayEl.appendChild(writeToast);
   let writeToastTimer: number | null = null;
+
+  // Framework project indicator (shown once per session on first visual edit in non-static project)
+  const frameworkIndicator = createFrameworkIndicatorEl(canvasEl);
+  let frameworkIndicatorShown = false;
+
+  function showFrameworkIndicator() {
+    if (frameworkIndicatorShown) return;
+    frameworkIndicatorShown = true;
+    frameworkIndicator.style.display = 'flex';
+  }
 
   // Listen for bridge responses
   canvas.onBridgeMessage((data) => {
@@ -688,7 +699,10 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   function sendMoveEdit(element: ElementInfo, deltaX: number, deltaY: number) {
     // Only write back for static projects
     const iframeWin = (canvas.iframe.contentWindow as any);
-    if (!iframeWin?.__sfIsStaticProject) return;
+    if (!iframeWin?.__sfIsStaticProject) {
+      showFrameworkIndicator();
+      return;
+    }
 
     // Skip if no source location (framework project or dynamic element)
     if (element.sourceLine == null || element.sourceCol == null) return;
@@ -732,7 +746,10 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   function sendInsertEdit(targetLine: number, targetCol: number, html: string) {
     // Only write back for static projects
     const iframeWin = (canvas.iframe.contentWindow as any);
-    if (!iframeWin?.__sfIsStaticProject) return;
+    if (!iframeWin?.__sfIsStaticProject) {
+      showFrameworkIndicator();
+      return;
+    }
 
     // Skip if write-back is locked (previous write is mid-reload cycle)
     if (state.writeBackLocked) return;
@@ -769,7 +786,10 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   function sendTextEdit(sourceLine: number, sourceCol: number, oldText: string, newText: string) {
     // Only write back for static projects
     const iframeWin = (canvas.iframe.contentWindow as any);
-    if (!iframeWin?.__sfIsStaticProject) return;
+    if (!iframeWin?.__sfIsStaticProject) {
+      showFrameworkIndicator();
+      return;
+    }
 
     // Skip if text didn't change
     if (oldText === newText) return;
@@ -816,6 +836,7 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     get writeBackLocked() { return state.writeBackLocked; },
     lockWriteBack,
     showWriteToast,
+    showFrameworkIndicator,
   };
 
   return manager;
@@ -947,6 +968,58 @@ function createWriteToastEl(): HTMLDivElement {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   `;
   return div;
+}
+
+function createFrameworkIndicatorEl(container: HTMLElement): HTMLDivElement {
+  const bar = document.createElement('div');
+  bar.id = 'sf-framework-indicator';
+  bar.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: rgba(55, 138, 221, 0.10);
+    border-bottom: 1px solid rgba(55, 138, 221, 0.20);
+    padding: 7px 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    color: var(--sf-text-primary, #1a1a1a);
+  `;
+
+  const icon = document.createElement('span');
+  icon.textContent = 'ℹ';
+  icon.style.cssText = `color: var(--sf-accent, #378ADD); font-size: 13px; flex-shrink: 0;`;
+
+  const msg = document.createElement('span');
+  msg.textContent = 'Visual edits are preview-only for this project. Use the AI sidebar to make code changes.';
+  msg.style.cssText = `flex: 1;`;
+
+  const dismissBtn = document.createElement('button');
+  dismissBtn.textContent = '×';
+  dismissBtn.setAttribute('aria-label', 'Dismiss');
+  dismissBtn.style.cssText = `
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+    color: var(--sf-text-secondary, #6b6b6b);
+    flex-shrink: 0;
+  `;
+  dismissBtn.addEventListener('click', () => {
+    bar.style.display = 'none';
+  });
+
+  bar.appendChild(icon);
+  bar.appendChild(msg);
+  bar.appendChild(dismissBtn);
+  container.appendChild(bar);
+  return bar;
 }
 
 function positionDiv(div: HTMLElement, rect: ElementRect) {
