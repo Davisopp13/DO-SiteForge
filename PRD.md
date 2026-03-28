@@ -86,7 +86,7 @@ src/
   - Files to modify: `src/server/sourcemap/patcher.ts`
   - Test: `npx tsc --noEmit` passes. Vitest test: apply a MoveEdit to sample HTML, verify the style attribute is added/updated correctly.
 
-- [ ] **Task 6: HTML source patcher — text edits**
+- [x] **Task 6: HTML source patcher — text edits**
   - Extend `patcher.ts` with text edit handling
   - For `TextEdit`:
     - Read the source file

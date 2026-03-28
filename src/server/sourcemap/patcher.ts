@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { VisualEdit, MoveEdit, PatchResult } from './types.js';
+import type { VisualEdit, MoveEdit, TextEdit, PatchResult } from './types.js';
 
 export function applyEdit(edit: VisualEdit, projectDir: string): PatchResult {
   const absPath = path.resolve(projectDir, edit.filepath);
@@ -15,6 +15,8 @@ export function applyEdit(edit: VisualEdit, projectDir: string): PatchResult {
         return { success: true, filepath: absPath, linesBefore, linesAfter: linesBefore };
       }
       patched = applyMoveEdit(html, edit);
+    } else if (edit.type === 'text') {
+      patched = applyTextEdit(html, edit);
     } else {
       return {
         success: false,
@@ -90,6 +92,34 @@ function formatStyle(map: Map<string, string>): string {
 function parsePx(val: string): number {
   const n = parseFloat(val);
   return isNaN(n) ? 0 : n;
+}
+
+function applyTextEdit(html: string, edit: TextEdit): string {
+  const tagStart = lineColToOffset(html, edit.sourceLine, edit.sourceCol);
+
+  if (html[tagStart] !== '<') {
+    throw new Error(
+      `Expected '<' at line ${edit.sourceLine}, col ${edit.sourceCol}, found '${html[tagStart]}'`
+    );
+  }
+
+  const tagEnd = findTagClose(html, tagStart);
+  if (tagEnd === -1) {
+    throw new Error(
+      `Could not find closing '>' for tag at line ${edit.sourceLine}, col ${edit.sourceCol}`
+    );
+  }
+
+  // Search for oldText starting from after the opening tag
+  const contentStart = tagEnd + 1;
+  const pos = html.indexOf(edit.oldText, contentStart);
+  if (pos === -1) {
+    throw new Error(
+      `Text "${edit.oldText}" not found in element content at line ${edit.sourceLine}, col ${edit.sourceCol}`
+    );
+  }
+
+  return html.slice(0, pos) + edit.newText + html.slice(pos + edit.oldText.length);
 }
 
 function applyMoveEdit(html: string, edit: MoveEdit): string {

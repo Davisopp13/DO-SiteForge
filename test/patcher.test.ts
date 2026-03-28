@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { applyEdit } from '../src/server/sourcemap/patcher.js';
-import type { MoveEdit } from '../src/server/sourcemap/types.js';
+import type { MoveEdit, TextEdit } from '../src/server/sourcemap/types.js';
 
 let tmpDir: string;
 
@@ -168,18 +168,119 @@ describe('applyEdit — MoveEdit', () => {
     expect(result.linesAfter).toBe(result.linesBefore);
   });
 
-  it('returns error for unimplemented edit type', () => {
-    writeHtml('index.html', '<div>x</div>\n');
-    const edit = {
+});
+
+describe('applyEdit — TextEdit', () => {
+  it('replaces text content in a simple element', () => {
+    writeHtml('index.html', '<div>Hello world</div>\n');
+    const edit: TextEdit = {
       type: 'text',
       sourceLine: 1,
       sourceCol: 1,
       filepath: 'index.html',
-      oldText: 'x',
-      newText: 'y',
-    } as any;
+      oldText: 'Hello world',
+      newText: 'Goodbye world',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toBe('<div>Goodbye world</div>\n');
+  });
+
+  it('preserves surrounding HTML when replacing text', () => {
+    const html = '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Old title</h1>\n  <p>Paragraph</p>\n</body>\n</html>\n';
+    writeHtml('index.html', html);
+    const edit: TextEdit = {
+      type: 'text',
+      sourceLine: 4,
+      sourceCol: 3,
+      filepath: 'index.html',
+      oldText: 'Old title',
+      newText: 'New title',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('<h1>New title</h1>');
+    expect(output).toContain('<p>Paragraph</p>');
+    expect(output).toContain('<!DOCTYPE html>');
+  });
+
+  it('replaces only the matched text, not attributes', () => {
+    writeHtml('index.html', '<button class="hero-btn">Click me</button>\n');
+    const edit: TextEdit = {
+      type: 'text',
+      sourceLine: 1,
+      sourceCol: 1,
+      filepath: 'index.html',
+      oldText: 'Click me',
+      newText: 'Get started',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toBe('<button class="hero-btn">Get started</button>\n');
+  });
+
+  it('handles multi-line text content', () => {
+    writeHtml('index.html', '<p>\n  Some text\n  on multiple lines\n</p>\n');
+    const edit: TextEdit = {
+      type: 'text',
+      sourceLine: 1,
+      sourceCol: 1,
+      filepath: 'index.html',
+      oldText: 'Some text',
+      newText: 'Updated text',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    const output = readHtml('index.html');
+    expect(output).toContain('Updated text');
+    expect(output).toContain('on multiple lines');
+  });
+
+  it('returns error when oldText is not found', () => {
+    writeHtml('index.html', '<div>Hello</div>\n');
+    const edit: TextEdit = {
+      type: 'text',
+      sourceLine: 1,
+      sourceCol: 1,
+      filepath: 'index.html',
+      oldText: 'Nonexistent text',
+      newText: 'replacement',
+    };
     const result = applyEdit(edit, tmpDir);
     expect(result.success).toBe(false);
-    expect(result.error).toContain('not yet implemented');
+    expect(result.error).toBeDefined();
+  });
+
+  it('returns error when wrong position given', () => {
+    writeHtml('index.html', '<div>hello</div>\n');
+    const edit: TextEdit = {
+      type: 'text',
+      sourceLine: 1,
+      sourceCol: 5, // points to 'h', not '<'
+      filepath: 'index.html',
+      oldText: 'hello',
+      newText: 'world',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  it('reports correct linesBefore and linesAfter for same-line replacement', () => {
+    writeHtml('index.html', '<div>short</div>\n<p>other</p>\n');
+    const edit: TextEdit = {
+      type: 'text',
+      sourceLine: 1,
+      sourceCol: 1,
+      filepath: 'index.html',
+      oldText: 'short',
+      newText: 'longer text here',
+    };
+    const result = applyEdit(edit, tmpDir);
+    expect(result.success).toBe(true);
+    expect(result.linesBefore).toBe(result.linesAfter); // same line count
   });
 });
