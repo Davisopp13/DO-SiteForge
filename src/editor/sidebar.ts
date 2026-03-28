@@ -7,11 +7,13 @@ import type { CanvasContext } from './context.js';
 import { parseFileChanges, resolveFileChanges, renderFileChanges, applyFileChangesAuto, renderDirectWriteChanges, type WatchedFileChange } from './filechanges.js';
 
 export type SidebarTab = 'chat' | 'properties';
+export type ModelAlias = 'sonnet' | 'opus' | 'haiku';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  model?: string;
 }
 
 export interface SidebarManager {
@@ -47,6 +49,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   let autoApply = false;
   let aiEnabled = true; // assume enabled, will check on init
   let aiStatus: AIStatus = { provider: 'anthropic-api', available: true, supportsDirectWrites: false };
+  let currentModel: ModelAlias = 'sonnet';
   const messages: ChatMessage[] = [];
 
   // Create tab bar
@@ -257,6 +260,77 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   const autoApplyRow = document.createElement('div');
   autoApplyRow.className = 'sf-auto-apply-row';
 
+  // Model selector
+  const MODEL_OPTIONS: { alias: ModelAlias; label: string; description: string }[] = [
+    { alias: 'sonnet', label: 'Sonnet', description: 'Fast, great for most edits' },
+    { alias: 'opus',   label: 'Opus',   description: 'Most capable, complex tasks' },
+    { alias: 'haiku',  label: 'Haiku',  description: 'Fastest, simple changes' },
+  ];
+
+  const modelSelectorWrapper = document.createElement('div');
+  modelSelectorWrapper.className = 'sf-model-selector';
+  modelSelectorWrapper.style.display = 'none'; // hidden until AI is available
+
+  const modelPill = document.createElement('button');
+  modelPill.className = 'sf-model-pill';
+  modelPill.textContent = 'Sonnet';
+
+  const modelDropdown = document.createElement('div');
+  modelDropdown.className = 'sf-model-dropdown';
+  modelDropdown.style.display = 'none';
+
+  function renderModelOptions(): void {
+    modelDropdown.innerHTML = '';
+    for (const opt of MODEL_OPTIONS) {
+      const item = document.createElement('button');
+      item.className = 'sf-model-option';
+      if (opt.alias === currentModel) item.classList.add('active');
+      item.innerHTML = `
+        <span class="sf-model-option-name">${opt.label}</span>
+        <span class="sf-model-option-desc">${opt.description}</span>
+        ${opt.alias === currentModel ? '<span class="sf-model-option-check">✓</span>' : ''}
+      `;
+      item.addEventListener('click', () => {
+        currentModel = opt.alias;
+        modelPill.textContent = opt.label;
+        closeModelDropdown();
+        renderModelOptions();
+        window.dispatchEvent(new CustomEvent('forge:modelChanged', { detail: { model: currentModel } }));
+      });
+      modelDropdown.appendChild(item);
+    }
+  }
+
+  function openModelDropdown(): void {
+    renderModelOptions();
+    modelDropdown.style.display = '';
+    modelPill.classList.add('open');
+  }
+
+  function closeModelDropdown(): void {
+    modelDropdown.style.display = 'none';
+    modelPill.classList.remove('open');
+  }
+
+  modelPill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (modelDropdown.style.display === 'none') {
+      openModelDropdown();
+    } else {
+      closeModelDropdown();
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => closeModelDropdown());
+  modelDropdown.addEventListener('click', (e) => e.stopPropagation());
+
+  // Close dropdown when textarea is focused
+  const closeDropdownOnFocus = (): void => closeModelDropdown();
+
+  modelSelectorWrapper.appendChild(modelPill);
+  modelSelectorWrapper.appendChild(modelDropdown);
+
   const autoApplyLabel = document.createElement('label');
   autoApplyLabel.className = 'sf-auto-apply-label';
   autoApplyLabel.textContent = 'Auto-apply';
@@ -272,6 +346,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
     autoApplySwitch.setAttribute('aria-checked', String(autoApply));
   });
 
+  autoApplyRow.appendChild(modelSelectorWrapper);
   autoApplyRow.appendChild(autoApplyLabel);
   autoApplyRow.appendChild(autoApplySwitch);
 
@@ -305,6 +380,7 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   }
 
   chatTextarea.addEventListener('input', autoGrowTextarea);
+  chatTextarea.addEventListener('focus', closeDropdownOnFocus);
 
   // Context provider for getting canvas context
   let contextProvider: (() => Promise<CanvasContext>) | null = null;
@@ -888,6 +964,8 @@ export function createSidebar(container: HTMLElement): SidebarManager {
       if (!aiEnabled) {
         deactivateChat();
       } else {
+        // Show model selector when AI is available
+        modelSelectorWrapper.style.display = '';
         // Hide auto-apply toggle for Claude Code (writes are automatic)
         if (aiStatus.supportsDirectWrites) {
           autoApplyRow.style.display = 'none';
