@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { annotateHtml } from './sourcemap/annotator.js';
 
 const BRIDGE_TAG = '<script src="/forge-bridge.js"></script>';
 
@@ -52,8 +53,10 @@ export function createStaticWithInjection(projectDir: string): RequestHandler {
     }
 
     const html = fs.readFileSync(filePath, 'utf-8');
+    // Annotate with source line/col before injecting bridge script
+    const annotated = annotateHtml(html);
     // Static projects get the live reload flag set
-    const injected = injectBridge(html, true);
+    const injected = injectBridge(annotated, true);
     res.type('text/html').send(injected);
   };
 }

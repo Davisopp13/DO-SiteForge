@@ -44,7 +44,7 @@ src/
   - Files to create: `src/server/sourcemap/annotator.ts`
   - Test: `npx tsc --noEmit` passes. Write a vitest test that annotates a sample HTML string and verifies line/col attributes are correct.
 
-- [ ] **Task 2: Inject annotations during static file serving**
+- [x] **Task 2: Inject annotations during static file serving**
   - Update `src/server/inject.ts`: when serving static HTML files, run the HTML through `annotateHtml()` before injecting the bridge script
   - The annotation happens in the `createStaticWithInjection()` function — annotate first, then inject bridge script
   - Annotations are added at serve time, NOT written to the source file — the source file stays clean
