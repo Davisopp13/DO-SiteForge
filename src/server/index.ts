@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBridgeInjector } from './inject.js';
 import { setupPreviewRoutes, type ProxyTarget } from './proxy.js';
-import { loadConfig, hasApiKey, setApiKey, type SiteForgeConfig } from './config.js';
+import { loadConfig, hasApiKey, setApiKey, setModel, type SiteForgeConfig } from './config.js';
 import { createChatRouter } from './routes/chat.js';
 import { createFilesRouter } from './routes/files.js';
 import { scanProject, type ProjectContext } from './project.js';
@@ -144,6 +144,30 @@ export function createServer(port = 3000, target?: ProxyTarget) {
       res.json({ success: true, aiEnabled: hasApiKey(newConfig), model: newConfig.model });
     } catch (err) {
       res.status(500).json({ error: 'Failed to save API key' });
+    }
+  });
+
+  // API: Get saved model preference
+  app.get('/api/config/model', (_req, res) => {
+    const cfg = app.locals.sfConfig as SiteForgeConfig;
+    res.json({ model: cfg.model ?? 'sonnet' });
+  });
+
+  // API: Save model preference
+  app.post('/api/config/model', (req, res) => {
+    const { model } = req.body as { model?: string };
+    const valid = ['sonnet', 'opus', 'haiku'];
+    if (!model || !valid.includes(model)) {
+      res.status(400).json({ error: 'Invalid model. Must be sonnet, opus, or haiku.' });
+      return;
+    }
+    try {
+      setModel(model);
+      const cfg = app.locals.sfConfig as SiteForgeConfig;
+      cfg.model = model;
+      res.json({ success: true, model });
+    } catch {
+      res.status(500).json({ error: 'Failed to save model preference' });
     }
   });
 

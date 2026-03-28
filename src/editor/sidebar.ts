@@ -296,6 +296,12 @@ export function createSidebar(container: HTMLElement): SidebarManager {
         closeModelDropdown();
         renderModelOptions();
         window.dispatchEvent(new CustomEvent('forge:modelChanged', { detail: { model: currentModel } }));
+        // Persist selection
+        fetch('/api/config/model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: currentModel }),
+        }).catch(() => { /* best-effort */ });
       });
       modelDropdown.appendChild(item);
     }
@@ -960,6 +966,13 @@ export function createSidebar(container: HTMLElement): SidebarManager {
   // Initialize with chat tab active
   switchTab('chat');
 
+  function applyModelAlias(alias: ModelAlias): void {
+    currentModel = alias;
+    const opt = MODEL_OPTIONS.find((o) => o.alias === alias);
+    if (opt) modelPill.textContent = opt.label;
+    renderModelOptions();
+  }
+
   // Check AI provider status on init
   fetch('/api/ai/status')
     .then((res) => res.json())
@@ -975,6 +988,16 @@ export function createSidebar(container: HTMLElement): SidebarManager {
         if (aiStatus.supportsDirectWrites) {
           autoApplyRow.style.display = 'none';
         }
+        // Load saved model preference
+        fetch('/api/config/model')
+          .then((r) => r.json())
+          .then((d: { model?: string }) => {
+            const alias = d.model as ModelAlias | undefined;
+            if (alias && ['sonnet', 'opus', 'haiku'].includes(alias)) {
+              applyModelAlias(alias);
+            }
+          })
+          .catch(() => { /* keep default */ });
       }
     })
     .catch(() => {

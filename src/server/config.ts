@@ -82,6 +82,28 @@ export function setApiKey(apiKey: string): void {
 }
 
 /**
+ * Save model preference to the global config file (~/.siteforge/config.json).
+ */
+export function setModel(model: string): void {
+  const configDir = path.join(os.homedir(), '.siteforge');
+  const configPath = path.join(configDir, 'config.json');
+
+  let existing: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(configPath)) {
+      existing = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    }
+  } catch {
+    // Start fresh if file is corrupted
+  }
+
+  existing.model = model;
+
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(configPath, JSON.stringify(existing, null, 2) + '\n', 'utf-8');
+}
+
+/**
  * Check if the config has a usable API key.
  */
 export function hasApiKey(config: SiteForgeConfig): boolean {

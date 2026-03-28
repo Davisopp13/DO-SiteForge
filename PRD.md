@@ -57,7 +57,7 @@ This works for both providers:
   - Files to modify: `src/editor/sidebar.ts`
   - Test: `npx tsc --noEmit` passes
 
-- [ ] **Task 6: Persist model preference**
+- [x] **Task 6: Persist model preference**
   - Save the selected model to `~/.siteforge/config.json` when changed (alongside the API key)
   - On sidebar init, read the saved model preference and set it as the default selection
   - Add `model?: string` to the config schema in `src/server/config.ts`
