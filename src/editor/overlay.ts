@@ -9,6 +9,8 @@ export interface OverlayManager {
   selectedElement: ElementInfo | null;
   isTextEditing: boolean;
   isPreviewMode: boolean;
+  writeBackLocked: boolean;
+  lockWriteBack(): void;
 }
 
 interface DragState {
@@ -30,6 +32,8 @@ interface OverlayState {
   drag: DragState | null;
   activeTool: string;
   pendingInsertTarget: { sourceLine: number; sourceCol: number } | null;
+  writeBackLocked: boolean;
+  writeBackLockTimer: number | null;
 }
 
 export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): OverlayManager {
@@ -70,6 +74,8 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     drag: null,
     activeTool: 'select',
     pendingInsertTarget: null,
+    writeBackLocked: false,
+    writeBackLockTimer: null,
   };
 
   // Text edit mode indicator
@@ -612,6 +618,28 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
   // --- Source write-back ---
 
+  // Lock write-backs for 500ms after a file write to avoid sending stale line numbers
+  // during the live-reload cycle. Unlocked early when the iframe finishes reloading.
+  function lockWriteBack() {
+    state.writeBackLocked = true;
+    if (state.writeBackLockTimer != null) {
+      clearTimeout(state.writeBackLockTimer);
+    }
+    state.writeBackLockTimer = window.setTimeout(() => {
+      state.writeBackLocked = false;
+      state.writeBackLockTimer = null;
+    }, 500);
+  }
+
+  // Clear the lock as soon as the iframe has reloaded and re-annotated
+  window.addEventListener('forge:iframe-loaded', () => {
+    state.writeBackLocked = false;
+    if (state.writeBackLockTimer != null) {
+      clearTimeout(state.writeBackLockTimer);
+      state.writeBackLockTimer = null;
+    }
+  });
+
   function sendMoveEdit(element: ElementInfo, deltaX: number, deltaY: number) {
     // Only write back for static projects
     const iframeWin = (canvas.iframe.contentWindow as any);
@@ -622,6 +650,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
     // Skip if no actual movement
     if (deltaX === 0 && deltaY === 0) return;
+
+    // Skip if write-back is locked (previous write is mid-reload cycle)
+    if (state.writeBackLocked) return;
+
+    lockWriteBack();
 
     fetch('/api/edits', {
       method: 'POST',
@@ -649,6 +682,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     // Only write back for static projects
     const iframeWin = (canvas.iframe.contentWindow as any);
     if (!iframeWin?.__sfIsStaticProject) return;
+
+    // Skip if write-back is locked (previous write is mid-reload cycle)
+    if (state.writeBackLocked) return;
+
+    lockWriteBack();
 
     fetch('/api/edits', {
       method: 'POST',
@@ -679,6 +717,11 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     // Skip if text didn't change
     if (oldText === newText) return;
 
+    // Skip if write-back is locked (previous write is mid-reload cycle)
+    if (state.writeBackLocked) return;
+
+    lockWriteBack();
+
     fetch('/api/edits', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -707,6 +750,8 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     get selectedElement() { return state.selectedElement; },
     get isTextEditing() { return state.isTextEditing; },
     get isPreviewMode() { return state.isPreviewMode; },
+    get writeBackLocked() { return state.writeBackLocked; },
+    lockWriteBack,
   };
 
   return manager;

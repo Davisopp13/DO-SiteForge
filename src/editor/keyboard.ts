@@ -134,7 +134,7 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
         xpath: elementToDelete.xpath,
       });
       // Write-back to source file for static projects
-      sendDeleteEdit(canvas, elementToDelete.sourceLine, elementToDelete.sourceCol);
+      sendDeleteEdit(canvas, overlay, elementToDelete.sourceLine, elementToDelete.sourceCol);
       // Deselect after delete
       window.dispatchEvent(new CustomEvent('forge:requestDeselect'));
       return;
@@ -173,13 +173,18 @@ export function createKeyboard(deps: KeyboardDeps): KeyboardManager {
   };
 }
 
-function sendDeleteEdit(canvas: import('./canvas.js').CanvasManager, sourceLine: number | undefined, sourceCol: number | undefined) {
+function sendDeleteEdit(canvas: import('./canvas.js').CanvasManager, overlay: import('./overlay.js').OverlayManager, sourceLine: number | undefined, sourceCol: number | undefined) {
   // Only write back for static projects
   const iframeWin = (canvas.iframe.contentWindow as any);
   if (!iframeWin?.__sfIsStaticProject) return;
 
   // Skip if no source location (framework project or dynamic element)
   if (sourceLine == null || sourceCol == null) return;
+
+  // Skip if write-back is locked (previous write is mid-reload cycle)
+  if (overlay.writeBackLocked) return;
+
+  overlay.lockWriteBack();
 
   fetch('/api/edits', {
     method: 'POST',

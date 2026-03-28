@@ -109,6 +109,11 @@ export function createCanvas(canvasEl: HTMLElement): CanvasManager {
     }, 500);
   }) as EventListener);
 
+  // Dispatch an event when the iframe reloads so the overlay can clear the write-back lock
+  iframe.addEventListener('load', () => {
+    window.dispatchEvent(new CustomEvent('forge:iframe-loaded'));
+  });
+
   return {
     iframe,
     container,

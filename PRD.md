@@ -182,7 +182,7 @@ src/
 
 ### Phase 3A-5: Annotation Refresh and Polish
 
-- [ ] **Task 15: Re-annotate after source file changes**
+- [x] **Task 15: Re-annotate after source file changes**
   - After a visual edit writes to the source file, the line numbers change. The next visual edit would use stale `data-sf-line` values.
   - Solution: after the live reload triggers (the iframe refreshes), the newly served HTML goes through `annotateHtml()` again automatically — because annotation happens at serve time. The refreshed page has correct line numbers.
   - Verify this works end-to-end: make a visual edit → file writes → live reload fires → page refreshes → new annotations are correct → next visual edit works.
