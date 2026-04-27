@@ -121,18 +121,22 @@ async function setupDevServerProxy(app: Express, port: number): Promise<void> {
     on: { error: onError },
   }));
 
-  // Vite's runtime dependencies use root-relative absolute URLs that bypass
-  // the /preview prefix (/@vite/*, /@react-refresh, /src/*, /node_modules/.vite/*).
-  // Mount a single proxy at root with a pathFilter so the full path is preserved
-  // when forwarding — app.use(path, mw) strips the mount prefix before forwarding,
-  // turning /@vite/client into /vite/client (Vite 404s).
+  // Forward everything to Vite except SiteForge's own routes. An allowlist is
+  // fragile because we don't control the user's project layout (e.g. /app/,
+  // /pages/, /Dashboard.jsx at root). A denylist is the correct model here.
+  const SITEFORGE_ROUTES = ['/preview', '/editor', '/forge-bridge.js', '/api', '/livereload'];
+
   app.use(createProxyMiddleware({
     target: `http://localhost:${port}`,
     changeOrigin: true,
-    pathFilter: (pathname) =>
-      pathname.startsWith('/@') ||
-      pathname.startsWith('/src') ||
-      pathname.startsWith('/node_modules/'),
+    ws: true,
+    pathFilter: (pathname: string) => {
+      if (SITEFORGE_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+        return false;
+      }
+      if (pathname === '/') return false;
+      return true;
+    },
     on: { error: onError },
   }));
 }
