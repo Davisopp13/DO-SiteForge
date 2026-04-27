@@ -30,7 +30,7 @@ export function createAnthropicApiProvider(config: SiteForgeConfig): AIProvider 
 
       // Inject projectRoot into context for system prompt building
       const fullContext = context ? { ...context, rootDir: context.rootDir || projectRoot } : undefined;
-      const systemPrompt = buildSystemPrompt(fullContext);
+      const systemPrompt = buildSystemPrompt(fullContext, 'anthropic-api');
 
       const MODEL_MAP: Record<string, string> = {
         sonnet: 'claude-sonnet-4-20250514',

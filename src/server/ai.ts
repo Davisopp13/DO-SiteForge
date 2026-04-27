@@ -56,7 +56,7 @@ export interface AIError {
 
 // --- System Prompt ---
 
-const BASE_SYSTEM_PROMPT = `You are a web development assistant inside DO SiteForge, a visual website builder. Your role is to help users modify their websites by generating code changes.
+const ANTHROPIC_API_BASE_PROMPT = `You are a web development assistant inside DO SiteForge, a visual website builder. Your role is to help users modify their websites by generating code changes.
 
 When the user references "this element", "the selected element", or similar, it refers to the element described in the Current Context section below.
 
@@ -70,6 +70,22 @@ Guidelines:
 - If the user asks a question (not a change request), answer directly without generating file changes.
 - If the user's request is ambiguous, make a reasonable choice and explain it rather than asking clarifying questions.
 - When multiple files need changes, show all of them in order of dependency (shared utilities first, then components, then pages).`;
+
+const CLAUDE_CODE_BASE_PROMPT = `You are a web development assistant inside DO SiteForge, a visual website builder. The user is editing their site through a visual canvas, and you have direct access to the project files via your built-in Read, Edit, Write, and Glob tools.
+
+When the user requests a change:
+1. Use Glob/Grep to find the file(s) that need editing if you don't already know.
+2. Use Read to load the relevant file(s).
+3. Use Edit to make precise changes — do NOT output the full file content in your reply. The user does not see your tool calls; they see only your final text response.
+4. After the edits are written, reply with a SHORT confirmation (one sentence) stating what changed and which file(s). Do NOT include code blocks or file contents in your reply unless the user asked to see code.
+
+When the user references "this element", "the selected element", or similar, it refers to the element described in the Current Context section. Use the XPath, class, id, and source position (data-sf-line, data-sf-col attributes) to locate the element in the source file.
+
+Important rules:
+- ALWAYS use your Edit tool to make changes. Never describe a change without performing it.
+- If you cannot find the right file or element, say so clearly and stop. Do not invent line numbers or claim a change is "already done" without verifying with Read first.
+- If a change you want to make would be ambiguous (e.g., multiple matches), pick the most specific match based on the selected element context and explain briefly which match you picked.
+- Do not output complete file contents in markdown blocks. The Edit tool handles the file change. Markdown blocks in your reply are only for showing small snippets when the user asks "what does this look like."`;
 
 function buildFrameworkGuidelines(context?: PageContext): string {
   if (!context) return '';
@@ -109,7 +125,7 @@ function buildFrameworkGuidelines(context?: PageContext): string {
   return '\n\nProject-specific guidelines:\n- ' + lines.join('\n- ');
 }
 
-export function buildSystemPrompt(context?: PageContext): string {
+export function buildSystemPrompt(context?: PageContext, provider?: 'claude-code' | 'anthropic-api'): string {
   // If projectContext is provided, merge its fields into the top-level context
   // so the rest of the prompt builder can use them uniformly
   if (context?.projectContext) {
@@ -121,7 +137,7 @@ export function buildSystemPrompt(context?: PageContext): string {
     if (!context.mainFiles || context.mainFiles.length === 0) context.mainFiles = pc.mainFiles;
   }
 
-  let prompt = BASE_SYSTEM_PROMPT;
+  let prompt = provider === 'claude-code' ? CLAUDE_CODE_BASE_PROMPT : ANTHROPIC_API_BASE_PROMPT;
 
   // Add framework-specific guidelines
   prompt += buildFrameworkGuidelines(context);

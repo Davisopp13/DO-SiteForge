@@ -17,7 +17,7 @@ export function createClaudeCodeProvider(): AIProvider {
       const { message, context, history, projectRoot } = params;
 
       // Build the prompt to send to Claude Code via stdin
-      const systemContext = buildSystemPrompt(context);
+      const systemContext = buildSystemPrompt(context, 'claude-code');
       const prompt = assemblePrompt(message, systemContext, history);
 
       const spawnArgs = ['--print', '--output-format', 'stream-json', '--verbose', '--dangerously-skip-permissions'];
@@ -186,11 +186,6 @@ function assemblePrompt(
   // Lead with the user's request — Claude Code responds faster when the action is first
   parts.push(`USER REQUEST: ${message}`);
 
-  // Concise instructions
-  parts.push(
-    '\nINSTRUCTIONS: Respond concisely. Make the change directly — do not explain what you plan to do first. Read only the files you need to modify. Write complete file contents, not partial diffs.'
-  );
-
   // Add conversation history (if any) before context so Claude Code has conversational continuity
   if (history.length > 0) {
     parts.push('\nCONVERSATION HISTORY:');
@@ -200,20 +195,9 @@ function assemblePrompt(
     }
   }
 
-  // Add context — trimmed to essentials (selected element, viewport, project type)
+  // Include the full system context — CLAUDE_CODE_BASE_PROMPT + framework guidelines + element context
   if (systemContext) {
-    // Extract only the "Current Context" section from the full system prompt
-    // to avoid sending the lengthy base prompt meant for the API provider
-    const contextIdx = systemContext.indexOf('--- Current Context ---');
-    if (contextIdx !== -1) {
-      parts.push('\n' + systemContext.slice(contextIdx));
-    } else {
-      // Fallback: extract framework guidelines if present
-      const guidelinesIdx = systemContext.indexOf('Project-specific guidelines:');
-      if (guidelinesIdx !== -1) {
-        parts.push('\n' + systemContext.slice(guidelinesIdx));
-      }
-    }
+    parts.push('\n' + systemContext);
   }
 
   return parts.join('\n');
