@@ -132,7 +132,7 @@ async function setupDevServerProxy(app: Express, port: number): Promise<void> {
     pathFilter: (pathname) =>
       pathname.startsWith('/@') ||
       pathname.startsWith('/src') ||
-      pathname.startsWith('/node_modules/.vite'),
+      pathname.startsWith('/node_modules/'),
     on: { error: onError },
   }));
 }
