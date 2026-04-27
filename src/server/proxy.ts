@@ -12,13 +12,23 @@ export interface ProxyTarget {
   projectDir: string;
 }
 
+// Matches Vite: "  ➜  Local:   http://localhost:4201/"
+// and Next.js:  "- Local:        http://localhost:4201"
+const READY_PATTERN = /Local:\s+http:\/\/localhost:(\d+)/;
+
+function stripAnsi(str: string): string {
+  return str.replace(/\x1B\[[\d;]*[A-Za-z]/g, '');
+}
+
 /**
  * Starts the target project's dev server as a child process.
- * For static projects, returns null (handled via Express static serving).
+ * Returns the child process (null for static) and a promise that resolves
+ * with the actual port once the dev server emits its ready URL in stdout.
+ * Rejects after 30s if no ready URL is detected.
  */
-export function spawnDevServer(target: ProxyTarget): ChildProcess | null {
+export function spawnDevServer(target: ProxyTarget): { child: ChildProcess | null; portReady: Promise<number> } {
   if (target.type === 'static' || !target.devCommand) {
-    return null;
+    return { child: null, portReady: Promise.resolve(target.port) };
   }
 
   const [cmd, ...args] = target.devCommand.split(' ');
@@ -30,20 +40,43 @@ export function spawnDevServer(target: ProxyTarget): ChildProcess | null {
     env: { ...process.env, PORT: String(target.port) },
   });
 
-  child.stdout?.on('data', (data: Buffer) => {
-    process.stdout.write(`[target] ${data.toString()}`);
+  const portReady = new Promise<number>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Dev server did not emit a ready URL within 30s'));
+    }, 30_000);
+
+    let resolved = false;
+
+    child.stdout?.on('data', (data: Buffer) => {
+      const text = data.toString();
+      process.stdout.write(`[target] ${text}`);
+      if (resolved) return;
+      const match = READY_PATTERN.exec(stripAnsi(text));
+      if (match) {
+        resolved = true;
+        clearTimeout(timeout);
+        resolve(parseInt(match[1], 10));
+      }
+    });
+
+    child.once('error', (err: Error) => {
+      if (!resolved) {
+        clearTimeout(timeout);
+        reject(err);
+      }
+    });
   });
 
   child.stderr?.on('data', (data: Buffer) => {
     process.stderr.write(`[target] ${data.toString()}`);
   });
 
-  child.on('error', (err) => {
+  child.on('error', (err: Error) => {
     console.error(`[target] Failed to start dev server: ${err.message}`);
   });
 
   childProcess = child;
-  return child;
+  return { child, portReady };
 }
 
 /**
@@ -66,28 +99,45 @@ export function setupPreviewRoutes(app: Express, target: ProxyTarget): void {
 async function setupDevServerProxy(app: Express, port: number): Promise<void> {
   const { createProxyMiddleware } = await import('http-proxy-middleware');
 
+  const onError = (err: Error, _req: any, res: any) => {
+    if ('writeHead' in res && typeof res.writeHead === 'function') {
+      res.writeHead(502, { 'Content-Type': 'text/html' });
+      res.end(`
+        <html><body style="font-family: system-ui; padding: 40px; color: #888;">
+          <h2>Waiting for dev server...</h2>
+          <p>The target dev server on port ${port} is still starting up.</p>
+          <p>This page will auto-refresh in 2 seconds.</p>
+          <script>setTimeout(() => location.reload(), 2000)</script>
+        </body></html>
+      `);
+    }
+  };
+
   app.use('/preview', createProxyMiddleware({
     target: `http://localhost:${port}`,
     changeOrigin: true,
     pathRewrite: { '^/preview': '' },
     ws: true,
-    // Self-handle errors so the editor doesn't crash if dev server is slow to start
-    on: {
-      error(err, _req, res) {
-        if ('writeHead' in res && typeof res.writeHead === 'function') {
-          (res as any).writeHead(502, { 'Content-Type': 'text/html' });
-          (res as any).end(`
-            <html><body style="font-family: system-ui; padding: 40px; color: #888;">
-              <h2>Waiting for dev server...</h2>
-              <p>The target dev server on port ${port} is still starting up.</p>
-              <p>This page will auto-refresh in 2 seconds.</p>
-              <script>setTimeout(() => location.reload(), 2000)</script>
-            </body></html>
-          `);
-        }
-      },
-    },
+    on: { error: onError },
   }));
+
+  // Vite's runtime dependencies use root-relative absolute URLs that bypass
+  // the /preview prefix, so proxy them directly at the root level.
+  const vitePassthroughPaths = [
+    '/@',            // /@vite/*, /@react-refresh, /@fs/*, etc.
+    '/src',          // /src/* source files served by Vite HMR
+    '/node_modules/.vite',  // pre-bundled deps cache
+  ];
+
+  const passthroughProxy = createProxyMiddleware({
+    target: `http://localhost:${port}`,
+    changeOrigin: true,
+    on: { error: onError },
+  });
+
+  for (const p of vitePassthroughPaths) {
+    app.use(p, passthroughProxy);
+  }
 }
 
 /**

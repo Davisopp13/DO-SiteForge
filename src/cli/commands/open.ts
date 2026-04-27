@@ -35,7 +35,20 @@ export const openCommand = new Command('open')
     };
 
     // Spawn target dev server for non-static projects
-    const devServerProcess = spawnDevServer(target);
+    const { child: devServerProcess, portReady } = spawnDevServer(target);
+
+    // For dev-server projects, wait until the server emits its ready URL so we
+    // know the actual port (Vite drifts: 4200 → 4201 → ... when ports are taken).
+    if (devServerProcess) {
+      try {
+        target.port = await portReady;
+      } catch (err) {
+        console.error(chalk.red(`\n  Error: Dev server failed to start.`));
+        console.error(chalk.dim(`  ${err instanceof Error ? err.message : String(err)}`));
+        killDevServer();
+        process.exit(1);
+      }
+    }
 
     // Load config and detect AI provider
     const config = loadConfig(resolved);
@@ -46,10 +59,10 @@ export const openCommand = new Command('open')
     );
     const activeProvider = providers.active;
 
-    // Start SiteForge editor server
+    // Start SiteForge editor server (target.port is now the actual resolved port)
     const { server } = createServer(EDITOR_PORT, target);
 
-    // Print startup message
+    // Print startup message (after dev server is ready so Preview shows the real port)
     console.log('');
     console.log(chalk.green.bold('  ⚡ SiteForge'));
     console.log('');
@@ -57,7 +70,7 @@ export const openCommand = new Command('open')
     console.log(`  ${chalk.dim('Type:')}     ${chalk.white(project.type)}`);
     console.log(`  ${chalk.dim('Editor:')}   ${chalk.cyan(`http://localhost:${EDITOR_PORT}`)}`);
     if (devServerProcess) {
-      console.log(`  ${chalk.dim('Preview:')}  ${chalk.cyan(`http://localhost:${project.port}`)}`);
+      console.log(`  ${chalk.dim('Preview:')}  ${chalk.cyan(`http://localhost:${target.port}`)}`);
     }
     if (activeProvider.name === 'claude-code') {
       console.log(`  ${chalk.dim('AI:')}       ${chalk.green('Claude Code (OAuth)')}`);

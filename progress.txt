@@ -1199,3 +1199,30 @@
   - `res.json()` parsing in the .then handler requires making the callback `async` — `async res =>` pattern
   - Filename extracted from filepath via `.split('/').pop()` for concise display
 ---
+
+## Iteration N - Task 17 (Phase 3A-5): Framework project indicator
+- Added `showFrameworkIndicator()` to `OverlayManager` interface and implementation
+- Creates an info bar (`#sf-framework-indicator`) appended to `canvasEl` (not the overlay) at z-index 20 so dismiss button is clickable
+- Shows once per session (guarded by `frameworkIndicatorShown` flag) on the first visual edit in a non-static project
+- Updated `sendMoveEdit`, `sendTextEdit`, `sendInsertEdit` in overlay.ts to call `showFrameworkIndicator()` before early-returning for non-static projects
+- Updated `sendDeleteEdit` in keyboard.ts to call `overlay.showFrameworkIndicator()` before early-returning
+- Dismiss button (×) hides the bar for the rest of the session
+- Files changed: src/editor/overlay.ts, src/editor/keyboard.ts, PRD.md
+- Learnings for future iterations:
+  - Framework indicator appended to `canvasEl`, not `overlayEl` — keeps it above the overlay (z-index: 20 > overlay's z-index: 10) so dismiss button receives pointer events
+  - `createFrameworkIndicatorEl(container)` takes the container as arg so it can append itself (no return-and-append pattern needed)
+  - Session flag (`frameworkIndicatorShown`) is a local `let` variable in createOverlay closure — not in OverlayState since it's not needed by other functions
+  - All 4 send functions (move, text, insert, delete) guard on `!__sfIsStaticProject` — all 4 now call showFrameworkIndicator
+---
+---
+
+## Iteration (Phase 3A Task 18): Update README and test
+- Updated README.md with source map bridge section explaining: how annotation + write-back works, supported visual edit operations table (drag/text/delete/add), framework project limitations and why
+- Updated "Supported Project Types" table with a "Visual Edit Write-back" column
+- Updated architecture section to include sourcemap/ directory (annotator.ts, patcher.ts, types.ts) and routes/edits.ts
+- Both `npm run typecheck` and `npm run build` pass
+- Files changed: README.md, PRD.md
+- Learnings for future iterations:
+  - All Phase 3A tasks are now complete
+  - The full visual edit flow: annotateHtml at serve time → overlay reads data-sf-line/col → POST /api/edits → patcher reads/modifies/writes HTML → live reload re-annotates
+  - Framework projects show a one-per-session dismissable banner on first visual edit (no write-back)

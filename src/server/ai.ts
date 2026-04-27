@@ -90,7 +90,7 @@ function buildFrameworkGuidelines(context?: PageContext): string {
         lines.push('This is an Astro project. Use .astro components by default, with framework islands for interactive parts.');
         break;
       case 'static':
-        lines.push('This is a static HTML/CSS/JS site. Use plain HTML, CSS, and vanilla JavaScript. No build step or framework.');
+        lines.push('This is a static HTML/CSS/JS site. Use plain HTML, CSS, and vanilla JavaScript. No build step or framework. The main file is usually index.html in the project root — check there first.');
         break;
     }
   }

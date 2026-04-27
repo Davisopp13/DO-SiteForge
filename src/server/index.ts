@@ -80,6 +80,14 @@ export function createServer(port = 3000, target?: ProxyTarget) {
     }
   });
 
+  // Set up preview routes with bridge injection if a target project is provided.
+  // Must be registered before editor static routes so Vite's root-relative paths
+  // (/@vite/*, /src/*, etc.) are matched by the proxy before Express's catch-alls.
+  if (target) {
+    app.use('/preview', createBridgeInjector());
+    setupPreviewRoutes(app, target);
+  }
+
   // Serve the bundled editor JS (takes priority over static)
   app.get('/editor/app.js', (_req, res) => {
     res.sendFile(path.join(editorDistDir, 'app.js'));
@@ -174,13 +182,6 @@ export function createServer(port = 3000, target?: ProxyTarget) {
       res.status(500).json({ error: 'Failed to save model preference' });
     }
   });
-
-  // Set up preview routes with bridge injection if a target project is provided
-  if (target) {
-    // Apply bridge injection middleware to preview routes
-    app.use('/preview', createBridgeInjector());
-    setupPreviewRoutes(app, target);
-  }
 
   const server = app.listen(port, () => {
     console.log(`SiteForge editor running at http://localhost:${port}`);
