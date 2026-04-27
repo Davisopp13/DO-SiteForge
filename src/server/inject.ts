@@ -65,7 +65,7 @@ export function createStaticWithInjection(projectDir: string): RequestHandler {
   };
 }
 
-function injectBridge(html: string, isStatic: boolean): string {
+export function injectBridge(html: string, isStatic = false): string {
   // For static projects, inject a flag so the bridge knows to connect to live reload
   const staticFlag = isStatic
     ? '<script>window.__sfIsStaticProject = true;</script>\n'

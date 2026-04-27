@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import express, { type Express } from 'express';
 import path from 'node:path';
-import { createStaticWithInjection } from './inject.js';
+import { createStaticWithInjection, injectBridge } from './inject.js';
 
 let childProcess: ChildProcess | null = null;
 
@@ -97,7 +97,7 @@ export function setupPreviewRoutes(app: Express, target: ProxyTarget): void {
 }
 
 async function setupDevServerProxy(app: Express, port: number): Promise<void> {
-  const { createProxyMiddleware } = await import('http-proxy-middleware');
+  const { createProxyMiddleware, responseInterceptor } = await import('http-proxy-middleware');
 
   const onError = (err: Error, _req: any, res: any) => {
     if ('writeHead' in res && typeof res.writeHead === 'function') {
@@ -118,7 +118,18 @@ async function setupDevServerProxy(app: Express, port: number): Promise<void> {
     changeOrigin: true,
     pathRewrite: { '^/preview': '' },
     ws: true,
-    on: { error: onError },
+    selfHandleResponse: true,
+    on: {
+      error: onError,
+      proxyRes: responseInterceptor(async (responseBuffer, proxyRes) => {
+        const contentType = String(proxyRes.headers['content-type'] || '');
+        if (contentType.includes('text/html')) {
+          const html = responseBuffer.toString('utf-8');
+          return injectBridge(html);
+        }
+        return responseBuffer;
+      }),
+    },
   }));
 
   // Forward everything to Vite except SiteForge's own routes. An allowlist is
