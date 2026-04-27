@@ -72,11 +72,19 @@ export function injectBridge(html: string, isStatic = false): string {
     : '';
   const injection = staticFlag + BRIDGE_TAG;
 
-  if (html.includes('</body>')) {
-    return html.replace('</body>', `${injection}\n</body>`);
+  // Inject into <head> — module scripts in <body> are deferred and Vite's
+  // hydration rewrites <body>, which strips classic script tags placed there.
+  // <head> is left alone and classic scripts there execute before module
+  // scripts begin.
+  if (html.includes('</head>')) {
+    return html.replace('</head>', `${injection}\n</head>`);
   }
-  if (html.includes('</html>')) {
-    return html.replace('</html>', `${injection}\n</html>`);
+  if (html.includes('<head>')) {
+    return html.replace('<head>', `<head>\n${injection}`);
   }
-  return html + injection;
+  // Fallback for HTML without explicit <head> tags
+  if (html.includes('<body>')) {
+    return html.replace('<body>', `${injection}\n<body>`);
+  }
+  return injection + html;
 }

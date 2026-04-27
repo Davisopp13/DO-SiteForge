@@ -557,29 +557,6 @@
     }
   }
 
-  // --- Mouse event forwarding ---
-
-  document.addEventListener('mousemove', (e: MouseEvent) => {
-    const element = document.elementFromPoint(e.clientX, e.clientY);
-    if (!element || element === document.documentElement) {
-      sendToEditor({ type: 'forge:hover', element: null });
-      return;
-    }
-    sendToEditor({ type: 'forge:hover', element: getElementInfo(element) });
-  });
-
-  document.addEventListener('click', (e: MouseEvent) => {
-    // Don't intercept clicks during text editing
-    if (editState) return;
-
-    const element = document.elementFromPoint(e.clientX, e.clientY);
-    if (!element || element === document.documentElement) {
-      sendToEditor({ type: 'forge:select', element: null });
-      return;
-    }
-    sendToEditor({ type: 'forge:select', element: getElementInfo(element) });
-  });
-
   // --- Live reload (static projects only) ---
 
   function connectLiveReload(retriesLeft: number): void {
@@ -617,14 +594,47 @@
   }
 
   // --- Initialize ---
+  // Bridge now injected into <head>, so DOM may not yet be parsed when this
+  // script runs. Defer all DOM-touching code until DOMContentLoaded.
+  // The __forgeBridgeInitialized flag (set above) is synchronous — that's
+  // intentional, it must run immediately as a re-entry guard.
 
-  window.addEventListener('message', handleMessage);
+  function init() {
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      if (!element || element === document.documentElement) {
+        sendToEditor({ type: 'forge:hover', element: null });
+        return;
+      }
+      sendToEditor({ type: 'forge:hover', element: getElementInfo(element) });
+    });
 
-  // Connect to live reload server (no-op for framework projects)
-  connectLiveReload(10);
+    document.addEventListener('click', (e: MouseEvent) => {
+      // Don't intercept clicks during text editing
+      if (editState) return;
 
-  // Signal that bridge is ready
-  sendToEditor({ type: 'forge:bridgeReady' });
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      if (!element || element === document.documentElement) {
+        sendToEditor({ type: 'forge:select', element: null });
+        return;
+      }
+      sendToEditor({ type: 'forge:select', element: getElementInfo(element) });
+    });
 
-  console.log('[SiteForge] Bridge script loaded');
+    window.addEventListener('message', handleMessage);
+
+    // Connect to live reload server (no-op for framework projects)
+    connectLiveReload(10);
+
+    // Signal that bridge is ready
+    sendToEditor({ type: 'forge:bridgeReady' });
+
+    console.log('[SiteForge] Bridge script loaded');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
