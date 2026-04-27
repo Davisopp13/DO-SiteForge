@@ -122,22 +122,19 @@ async function setupDevServerProxy(app: Express, port: number): Promise<void> {
   }));
 
   // Vite's runtime dependencies use root-relative absolute URLs that bypass
-  // the /preview prefix, so proxy them directly at the root level.
-  const vitePassthroughPaths = [
-    '/@',            // /@vite/*, /@react-refresh, /@fs/*, etc.
-    '/src',          // /src/* source files served by Vite HMR
-    '/node_modules/.vite',  // pre-bundled deps cache
-  ];
-
-  const passthroughProxy = createProxyMiddleware({
+  // the /preview prefix (/@vite/*, /@react-refresh, /src/*, /node_modules/.vite/*).
+  // Mount a single proxy at root with a pathFilter so the full path is preserved
+  // when forwarding — app.use(path, mw) strips the mount prefix before forwarding,
+  // turning /@vite/client into /vite/client (Vite 404s).
+  app.use(createProxyMiddleware({
     target: `http://localhost:${port}`,
     changeOrigin: true,
+    pathFilter: (pathname) =>
+      pathname.startsWith('/@') ||
+      pathname.startsWith('/src') ||
+      pathname.startsWith('/node_modules/.vite'),
     on: { error: onError },
-  });
-
-  for (const p of vitePassthroughPaths) {
-    app.use(p, passthroughProxy);
-  }
+  }));
 }
 
 /**
