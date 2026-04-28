@@ -222,12 +222,15 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
 
     // Handle drag in progress
     if (state.drag) {
-      const deltaX = e.clientX - state.drag.startClientX;
-      const deltaY = e.clientY - state.drag.startClientY;
+      const screenDeltaX = e.clientX - state.drag.startClientX;
+      const screenDeltaY = e.clientY - state.drag.startClientY;
+      const scale = canvas.getScale();
+      const deltaX = screenDeltaX / scale;
+      const deltaY = screenDeltaY / scale;
       state.drag.currentDeltaX = deltaX;
       state.drag.currentDeltaY = deltaY;
 
-      // Send move to bridge for visual feedback
+      // Send move to bridge for visual feedback (content-pixel deltas)
       canvas.sendToBridge({
         type: 'forge:move',
         xpath: state.drag.elementXPath,
@@ -260,8 +263,9 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     if (state.pendingHoverRequest) return;
 
     const iframeOffset = canvas.getIframeOffset();
-    const x = e.clientX - iframeOffset.x;
-    const y = e.clientY - iframeOffset.y;
+    const scale = canvas.getScale();
+    const x = (e.clientX - iframeOffset.x) / scale;
+    const y = (e.clientY - iframeOffset.y) / scale;
 
     state.pendingHoverRequest = true;
     canvas.sendToBridge({
@@ -329,8 +333,9 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
     // Add tool: insert a new element at click position
     if (state.activeTool === 'add') {
       const iframeOffset = canvas.getIframeOffset();
-      const x = e.clientX - iframeOffset.x;
-      const y = e.clientY - iframeOffset.y;
+      const scale = canvas.getScale();
+      const x = (e.clientX - iframeOffset.x) / scale;
+      const y = (e.clientY - iframeOffset.y) / scale;
 
       // Capture target element's source location before the insert
       if (state.hoveredElement?.sourceLine != null && state.hoveredElement?.sourceCol != null) {
@@ -600,11 +605,12 @@ export function createOverlay(canvasEl: HTMLElement, canvas: CanvasManager): Ove
   function toOverlayCoords(rect: ElementRect): ElementRect {
     const iframeOffset = canvas.getIframeOffset();
     const overlayRect = overlayEl.getBoundingClientRect();
+    const scale = canvas.getScale();
     return {
-      x: rect.x + iframeOffset.x - overlayRect.x,
-      y: rect.y + iframeOffset.y - overlayRect.y,
-      width: rect.width,
-      height: rect.height,
+      x: rect.x * scale + iframeOffset.x - overlayRect.x,
+      y: rect.y * scale + iframeOffset.y - overlayRect.y,
+      width: rect.width * scale,
+      height: rect.height * scale,
     };
   }
 

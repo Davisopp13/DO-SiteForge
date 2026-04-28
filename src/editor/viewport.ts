@@ -10,7 +10,7 @@ export interface ViewportManager {
 interface PresetConfig {
   label: string;
   icon: string;
-  width: number | null; // null = 100%
+  width: number;
   dimensions: string;
 }
 
@@ -40,8 +40,8 @@ const PRESETS: Record<ViewportPreset, PresetConfig> = {
       <path d="M6 16 L12 16"/>
       <path d="M9 13 L9 16"/>
     </svg>`,
-    width: null,
-    dimensions: '100%',
+    width: 1440,
+    dimensions: '1440 × 900',
   },
   custom: {
     label: 'Custom',
